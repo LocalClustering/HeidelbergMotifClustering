@@ -1,9 +1,9 @@
-# Local Motif Clustering via (Hyper)Graph Partitioning
+# Local Motif Clustering via (Hyper)Graph Partitioning [![Codacy Badge](https://app.codacy.com/project/badge/Grade/49051692992840f8aee01dc12ab2b568)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=LocalClustering/Local-Motif-Clustering-via-Hyper-Graph-Partitioning&amp;utm_campaign=Badge_Grade)
 
 A widely-used operation on graphs is local clustering, i.e., extracting a well-characterized community around a seed node without the need to process the whole graph.  Recently local motif clustering has been proposed: it looks for a local cluster based on the distribution of motifs.  Since this local clustering perspective is relatively new, most approaches proposed for it are extensions of statistical and numerical methods previously used for edge-based local clustering, while the available combinatorial approaches are still few and relatively simple.  In this work, we build a hypergraph and a graph model which both represent the motif-distribution around the seed node. We solve these models using  sophisticated combinatorial algorithms designed for (hyper)graph partitioning.  In extensive experiments with the triangle motif, we observe that our algorithm computes communities with a motif conductance value being one third on average in comparison against the communities computed by the state-of-the-art tool MAPPR while being 6.3 times faster on average.
 
-This repository is associated with the paper "Local Motif Clustering via (Hyper)Graph Partitioning", which has been published as an extended abstract at [SoCS 2022](https://ojs.aaai.org/index.php/SOCS/article/view/21779) and is accepted for publication at SIAM ALENEX 2023.
-Additionally, you can find a technical report [here](https://arxiv.org/pdf/2205.06176.pdf) and our SoCS 2022 poster [here](misc/SoCS_Poster.pdf).
+This repository is associated with the paper "**Local Motif Clustering via (Hyper)Graph Partitioning**", which has been published as an extended abstract at [SoCS 2022](https://ojs.aaai.org/index.php/SOCS/article/view/21779) and is accepted for publication at SIAM ALENEX 2023.
+Additionally, you can find a [technical report](https://arxiv.org/pdf/2205.06176.pdf) and our SoCS 2022 [poster](misc/SoCS_Poster.pdf).
 
 If you publish results using our algorithms, please acknowledge our work by citing our paper:
 
@@ -37,8 +37,8 @@ This repository contains the following subfolders and files:
 Description
 -----------
 
-This repository contains a sample graph (database/), a simplified code base containing just the sequential graph-based version of our algorithm and MAPPR (algorithms/), and a set of scripts to generate sample experiments (experiments/). These sample experiments can be easily executed as shown below.
-Additionally, this repository contains the full code used in the paper (full_algorithms/), the full experimental data for comparisons agains MAPPR (full_results/), and full scripts to generate the charts and the table contained (full_plotting/) in the paper.
+This repository contains a sample graph ([database/](database/)), a simplified code base containing just the sequential graph-based version of our algorithm and MAPPR ([algorithms/](algorithms/)), and a set of scripts to generate sample experiments ([experiments/](experiments/)). These sample experiments can be easily executed as shown below.
+Additionally, this repository contains the full code used in the paper ([full_algorithms/](full_algorithms/)), the full experimental data for comparisons agains MAPPR ([full_results/](full_results/)), and full scripts to generate the charts and the table contained ([full_plotting/](full_plotting/)) in the paper.
 Please follow the instructions below to compile the code, run the sample experiments, and plot the charts.
 
 
