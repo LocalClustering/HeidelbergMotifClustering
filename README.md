@@ -24,15 +24,15 @@ Repository Structure
 
 This repository contains the following subfolders and files:
 
- - algorithms/ - folder containing the code of the graph-based version of our algorithm as well as MAPPR
- - database/ - containing a sample of the graphs used in our experiments
- - experiments/ - folder containing metascripts to generate and execute a sample of our experiments
- - full_results/ - folder containing full experimental data of the comparison of our graph-based algorithm against MAPPR
- - full_algorithms/ - folder containing all our algorithms (graph- and hypergraph-based versions, both sequential and parallel) as well as MAPPR
- - full_plotting/ - folder containing scripts to plot all charts and the table contained in our paper
- - build_all.sh - script to automatically compile the algorithms contained in algorithms/
- - run_sample.sh - script to generate, run, and analyze a sample of our experiments
- - clean_all.sh - script to clean the binary files of the algorithms contained in algorithms/
+ - [algorithms/](algorithms/) - folder containing the code of the graph-based version of our algorithm as well as MAPPR
+ - [database/](database/) - containing a sample of the graphs used in our experiments
+ - [experiments/](experiments/) - folder containing metascripts to generate and execute a sample of our experiments
+ - [full_results/](full_results/) - folder containing full experimental data of the comparison of our graph-based algorithm against MAPPR
+ - [full_algorithms/](full_algorithms/) - folder containing all our algorithms (graph- and hypergraph-based versions, both sequential and parallel) as well as MAPPR
+ - [full_plotting/](full_plotting/) - folder containing scripts to plot all charts and the table contained in our paper
+ - [build_all.sh](build_all.sh) - script to automatically compile the algorithms contained in algorithms/
+ - [run_sample.sh](run_sample.sh) - script to generate, run, and analyze a sample of our experiments
+ - [clean_all.sh](clean_all.sh) - script to clean the binary files of the algorithms contained in algorithms/
 
 Description
 -----------
@@ -47,13 +47,13 @@ Requirements to Compile Algorithms
 
  - A 64-bit Linux operating system.
  - A modern, ![C++17](https://img.shields.io/badge/C++-17-blue.svg?style=flat)-ready compiler such as `g++` version 7 or higher or `clang` version 11.0.3 or higher.
- - The [cmake][cmake] build system (>= 3.16).
- - The [Boost - Program Options][Boost.Program_options] library and the boost header files (>= 1.48).
- - The [Intel Thread Building Blocks][tbb] library (TBB)
- - The [Portable Hardware Locality][hwloc] library (hwloc)
- - An MPI implementation, e.g., OpenMPI (https://www.open-mpi.org/) or MPICH (https://www.mpich.org)
+ - The cmake build system (>= 3.16).
+ - The Boost - Program Options library and the boost header files (>= 1.48).
+ - The Intel Thread Building Blocks library (TBB)
+ - The Portable Hardware Locality library (hwloc)
+ - An MPI implementation, e.g., [OpenMPI](https://www.open-mpi.org/) or [MPICH](https://www.mpich.org)
 
-Building Simplified Code Base (algorithms/)
+Building Simplified Code Base ([algorithms/)
 -----------
 
 First of all, install the required depedencies using the following command (for linux):
