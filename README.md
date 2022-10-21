@@ -53,7 +53,7 @@ Requirements to Compile Algorithms
  - The Portable Hardware Locality library (hwloc)
  - An MPI implementation, e.g., [OpenMPI](https://www.open-mpi.org/) or [MPICH](https://www.mpich.org)
 
-Clone Repository
+Cloning Repository
 -----------
 
 Clone this repository with the following command to include all necessary submodules:
