@@ -1,4 +1,4 @@
-# Local Motif Clustering via (Hyper)Graph Partitioning [![Codacy Badge](https://app.codacy.com/project/badge/Grade/49051692992840f8aee01dc12ab2b568)](https://www.codacy.com/gh/LocalClustering/Local-Motif-Clustering-via-Hyper-Graph-Partitioning/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=LocalClustering/Local-Motif-Clustering-via-Hyper-Graph-Partitioning&amp;utm_campaign=Badge_Grade)
+# Local Motif Clustering via (Hyper)Graph Partitioning [![Codacy Badge](https://app.codacy.com/project/badge/Grade/93d164647e654bf2a814f5101fdf3481)](https://www.codacy.com/gh/LocalClustering/HeidelbergMotifClustering/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=LocalClustering/HeidelbergMotifClustering&amp;utm_campaign=Badge_Grade)[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A widely-used operation on graphs is local clustering, i.e., extracting a well-characterized community around a seed node without the need to process the whole graph.  Recently local motif clustering has been proposed: it looks for a local cluster based on the distribution of motifs.  Since this local clustering perspective is relatively new, most approaches proposed for it are extensions of statistical and numerical methods previously used for edge-based local clustering, while the available combinatorial approaches are still few and relatively simple.  In this work, we build a hypergraph and a graph model which both represent the motif-distribution around the seed node. We solve these models using  sophisticated combinatorial algorithms designed for (hyper)graph partitioning.  In extensive experiments with the triangle motif, we observe that our algorithm computes communities with a motif conductance value being one third on average in comparison against the communities computed by the state-of-the-art tool MAPPR while being 6.3 times faster on average.
 
@@ -53,7 +53,16 @@ Requirements to Compile Algorithms
  - The Portable Hardware Locality library (hwloc)
  - An MPI implementation, e.g., [OpenMPI](https://www.open-mpi.org/) or [MPICH](https://www.mpich.org)
 
-Building Simplified Code Base ([algorithms/)
+Clone Repository
+-----------
+
+Clone this repository with the following command to include all necessary submodules:
+
+```console
+git clone --depth=2 --recursive https://github.com/LocalClustering/HeidelbergMotifClustering.git
+```
+
+Building Simplified Code Base (algorithms/)
 -----------
 
 First of all, install the required depedencies using the following command (for linux):
