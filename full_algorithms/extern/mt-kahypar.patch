@@ -1,0 +1,4012 @@
+diff --git a/.gitignore b/.gitignore
+index 60c5d020..9da4b95f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -33,7 +33,6 @@ debug2/*
+ tuning/*
+ debug152/*
+ profile/*
+-external_tools/*
+ .vscode/*
+ example_1
+ example_2
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 767d72be..11816601 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -318,10 +318,9 @@ add_custom_target(MtKaHyPar
+   COMMAND $(MAKE) MtKaHyParDefault
+   COMMAND $(MAKE) MtKaHyParQuality
+   COMMAND $(MAKE) MtKaHyParGraph
+-  COMMAND $(MAKE) MtKaHyParGraphQuality
+   COMMAND $(MAKE) MtKaHyParWrapper)
+ 
+ add_custom_target(mt_kahypar_tests
+   COMMAND $(MAKE) mt_kahypar_fast_tests
+   COMMAND $(MAKE) mt_kahypar_strong_tests
+-  COMMAND $(MAKE) mt_kahypar_graph_tests)
+\ No newline at end of file
++  COMMAND $(MAKE) mt_kahypar_graph_tests)
+diff --git a/README.md b/README.md
+index 8e3cbaf7..62248681 100644
+--- a/README.md
++++ b/README.md
+@@ -65,13 +65,15 @@ Building Mt-KaHyPar
+ 3. Run cmake: `cmake .. -DCMAKE_BUILD_TYPE=RELEASE`
+ 4. Run make: `make MtKaHyPar -j`
+ 
+-The build produces five executables, which will be located in `build/mt-kahypar/application/`:
++The build produces four executables, which will be located in `build/mt-kahypar/application/`:
+ 
+-- `MtKaHyParDefault` and `MtKaHyParGraph` (Mt-KaHyPar-D): computes good partitions very fast
+-- `MtKaHyPar(Graph)Quality` (Mt-KaHyPar-Q): computes high-quality partitions in reasonable time (using n levels)
+-- `MtKaHyPar`: wrapper around the five binaries
++- `MtKaHyParDefault` (Mt-KaHyPar-D): computes good partitions very fast (for hypergraphs)
++- `MtKaHyParGraph` (Mt-KaHyPar-Graph): computes good partitions very fast (for graphs)
++- `MtKaHyParQuality` (Mt-KaHyPar-Q): computes high-quality partitions in reasonable time (using n levels)
++- `MtKaHyPar`: wrapper around the three binaries
+ 
+-Note that `MtKaHyParGraph` and `MtKaHyParGraphQuality` uses the same feature set as `MtKaHyParDefault` and `MtKaHyParQuality`. However, they replace the internal hypergraph data structure of with a graph data structure. In fact, both are a factor of 2 faster for graphs on average.
++Note that `MtKaHyParGraph` uses the same feature set as `MtKaHyParDefault`. However, it replaces
++the internal hypergraph data structure of `MtKaHyParDefault` with a graph data structure. In fact, `MtKaHyParGraph` is a factor of 2 faster than `MtKaHyParDefault` for graphs on average.
+ 
+ Running Mt-KaHyPar
+ -----------
+@@ -79,25 +81,25 @@ Running Mt-KaHyPar
+ Mt-KaHyPar has several configuration parameters. We recommend to use one of our presets (also located in the `config` folder):
+ 
+ - `default`: default parameters for Mt-KaHyPar-D/-Graph (`config/default_preset.ini`)
+-- `default_flows`: extends the default preset with flow-based refinement (`config/default_flow_preset.ini`)
++- `default_flow`: extends the default preset with flow-based refinement (`config/default_flow_preset.ini`)
+ - `deterministic`: parameters to make Mt-KaHyPar-D deterministic (`config/deterministic_preset.ini`)
+ - `quality`: default parameters for Mt-KaHyPar-Q (`config/quality_preset.ini`)
+-- `quality_flows`: extends the quality preset with flow-based refinement (`config/quality_flow_preset.ini`)
++- `quality_flow`: extends the quality preset with flow-based refinement (`config/quality_flow_preset.ini`)
+ 
+ The presets can be ranked from lowest to the highest quality as follows: `deterministic`,
+-`default`, `quality`, `default_flows` and `quality_flows`.
++`default`, `quality`, `default_flow` and `quality_flow`.
+ Deterministic mode is only supported for Mt-KaHyPar-D, not -Graph or -Q.
+ If you want to change parameters manually, please run `--help` for a detailed description of the different program options. We use the [hMetis format](http://glaros.dtc.umn.edu/gkhome/fetch/sw/hmetis/manual.pdf) for hypergraph files as well as the partition output file and the [Metis format](http://glaros.dtc.umn.edu/gkhome/fetch/sw/metis/manual.pdf) for graph files. Per default, we expect the input to be in hMetis format, but you can read graphs in Metis format via command line parameter `--input-file-format=metis`.
+ 
+ To run Mt-KaHyPar, you can use the following command:
+ 
+-    ./MtKaHyPar -h <path-to-hgr> --preset-type=<deterministic/default/default_flows/quality/quality_flows> --instance_type=<hypergraph/graph> -t <# threads> -k <# blocks> -e <imbalance (e.g. 0.03)> -o km1 -m direct
++    ./MtKaHyPar -h <path-to-hgr> --preset-type=<deterministic/default/default_flow/quality/quality_flow> --instance_type=<hypergraph/graph> -t <# threads> -k <# blocks> -e <imbalance (e.g. 0.03)> -o km1 -m direct
+ 
+ or directly provide a configuration file (see `config` folder):
+ 
+     ./MtKaHyPar -h <path-to-hgr> -p <path-to-config-file> -t <# threads> -k <# blocks> -e <imbalance (e.g. 0.03)> -o km1 -m direct
+ 
+-Note that when `--instance-type=graph` is set, we run Mt-KaHyPar-Graph (only available for preset types `default` and `default_flows`), otherwise Mt-KaHyPar-D or -Q based on the preset type. The partition output file will be placed in the same folder as the input hypergraph file. If you want to change the default partition output folder, add the command line parameter `--partition-output-folder=path/to/folder`. There is also an option to disable writing the partition file `--write-partition-file=false`. Further, there are several useful options that can provide you with additional insights during and after the partitioning process:
++Note that when `--instance-type=graph` is set, we run Mt-KaHyPar-Graph (only available for preset types `default` and `default_flow`), otherwise Mt-KaHyPar-D or -Q based on the preset type. The partition output file will be placed in the same folder as the input hypergraph file. If you want to change the default partition output folder, add the command line parameter `--partition-output-folder=path/to/folder`. There is also an option to disable writing the partition file `--write-partition-file=false`. Further, there are several useful options that can provide you with additional insights during and after the partitioning process:
+ - `--show-detailed-timings=true`: Shows detailed subtimings of each multilevel phase at the end of the partitioning process
+ - `--show-memory-consumption=true`: Gives detailed information on how much memory was allocated and how memory is reused throughout the algorithm
+ - `--enable-progress-bar=true`: Shows a progess bar during the coarsening and refinement phase
+@@ -256,55 +258,6 @@ We distribute this framework freely to foster the use and development of hypergr
+ If you use Mt-KaHyPar in an academic setting please cite the appropriate papers.
+ If you are interested in a commercial license, please contact me.
+ 
+-    // Mt-KaHyPar-D
+-    @inproceedings{MT-KAHYPAR-D,
+-      title     = {Scalable Shared-Memory Hypergraph Partitioning},
+-      author    = {Gottesbüren, Lars and
+-                   Heuer, Tobias and
+-                   Sanders, Peter and
+-                   Schlag, Sebastian},
+-      booktitle = {23rd Workshop on Algorithm Engineering and Experiments (ALENEX 2021)},
+-      pages     = {16--30},
+-      year      = {2021},
+-      publisher = {SIAM},
+-      doi       = {10.1137/1.9781611976472.2},
+-    }
+-
+-    // Mt-KaHyPar-Q
+-    @inproceedings{MT-KAHYPAR-Q,
+-      title     = {Shared-Memory $n$-level Hypergraph Partitioning},
+-      author    = {Lars Gottesb{\"{u}}ren and
+-                   Tobias Heuer and
+-                   Peter Sanders and
+-                   Sebastian Schlag},
+-      booktitle = {24th Workshop on Algorithm Engineering and Experiments (ALENEX 2022)},
+-      year      = {2022},
+-      publisher = {SIAM},
+-      month     = {01},
+-      doi       = {10.1137/1.9781611977042.11}
+-    }
+-
+-    // Deterministic Partitioning (Technical Report)
+-    @techreport{MT-KAHYPAR-SDET,
+-      title       = {Deterministic Parallel Hypergraph Partitioning},
+-      author      = {Lars Gottesbüren and
+-                     Michael Hamann},
+-      institution = {Karlsruhe Institute of Technology},
+-      year        = {2021},
+-      url         = {https://arxiv.org/pdf/2112.12704.pdf}
+-    }
+-
+-    // Flow-Based Refinement (Technical Report)
+-    @techreport{MT-KAHYPAR-FLOWS,
+-      title       = {Parallel Flow-Based Hypergraph Partitioning},
+-      author      = {Lars Gottesb{\"{u}}ren and
+-                     Tobias Heuer and
+-                     Peter Sanders},
+-      institution = {Karlsruhe Institute of Technology},
+-      year        = {2022},
+-      url         = {https://arxiv.org/pdf/2201.01556.pdf}
+-    }
+-
+ 
+ Contributing
+ ------------
+diff --git a/include/libmtkahypar.h b/include/libmtkahypar.h
+index 0fd02475..4bcfe284 100644
+--- a/include/libmtkahypar.h
++++ b/include/libmtkahypar.h
+@@ -23,6 +23,7 @@
+ #define LIBKAHYPAR_H
+ 
+ #include <stddef.h>
++#include <vector>
+ 
+ #ifdef __cplusplus
+ extern "C" {
+@@ -83,11 +84,12 @@ KAHYPAR_API void mt_kahypar_partition(const mt_kahypar_hypernode_id_t num_vertic
+                                       mt_kahypar_hyperedge_weight_t* objective,
+                                       mt_kahypar_context_t* kahypar_context,
+                                       mt_kahypar_partition_id_t* partition,
+-                                      const bool verbose = false);
++                                      const bool verbose = false,
++                                      const bool noMotif = false);
+ 
+ 
+ #ifdef __cplusplus
+ }
+ #endif
+ 
+-#endif    // LIBKAHYPAR_H
+\ No newline at end of file
++#endif    // LIBKAHYPAR_H
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index 2274a7ed..dbad1f8f 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -17,13 +17,7 @@ target_link_libraries(mtkahypargraph ${Boost_LIBRARIES})
+ target_compile_definitions(mtkahypargraph PUBLIC MT_KAHYPAR_LIBRARY_MODE)
+ target_compile_definitions(mtkahypargraph PUBLIC USE_GRAPH_PARTITIONER)
+ 
+-# Library MT-KaHyPar-GQ
+-add_library(mtkahypargq SHARED libmtkahypar.cc)
+-target_link_libraries(mtkahypargq ${Boost_LIBRARIES})
+-target_compile_definitions(mtkahypargq PUBLIC MT_KAHYPAR_LIBRARY_MODE)
+-target_compile_definitions(mtkahypargq PUBLIC USE_GRAPH_PARTITIONER USE_STRONG_PARTITIONER)
+-
+-set(TARGETS_WANTING_ALL_SOURCES ${TARGETS_WANTING_ALL_SOURCES} mtkahypard mtkahyparq mtkahypargraph mtkahypargq PARENT_SCOPE)
++set(TARGETS_WANTING_ALL_SOURCES ${TARGETS_WANTING_ALL_SOURCES} mtkahypard mtkahyparq mtkahypargraph PARENT_SCOPE)
+ 
+ set_target_properties(mtkahypard PROPERTIES
+     PUBLIC_HEADER ../include/libmtkahypar.h)
+@@ -31,27 +25,22 @@ set_target_properties(mtkahyparq PROPERTIES
+     PUBLIC_HEADER ../include/libmtkahypar.h)
+ set_target_properties(mtkahypargraph PROPERTIES
+     PUBLIC_HEADER ../include/libmtkahypar.h)
+-set_target_properties(mtkahypargq PROPERTIES
+-    PUBLIC_HEADER ../include/libmtkahypar.h)
+ 
+ target_include_directories(mtkahypard PRIVATE ../include)
+ target_include_directories(mtkahyparq PRIVATE ../include)
+ target_include_directories(mtkahypargraph PRIVATE ../include)
+-target_include_directories(mtkahypargq PRIVATE ../include)
+ 
+ configure_file(libmtkahypard.pc.in libmtkahypard.pc @ONLY)
+ configure_file(libmtkahyparq.pc.in libmtkahyparq.pc @ONLY)
+ configure_file(libmtkahypargraph.pc.in libmtkahypargraph.pc @ONLY)
+-configure_file(libmtkahypargq.pc.in libmtkahypargq.pc @ONLY)
+ 
+-install(TARGETS mtkahypard mtkahyparq mtkahypargraph mtkahypargq
++install(TARGETS mtkahypard mtkahyparq mtkahypargraph
+   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+   PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+ 
+ install(FILES ${CMAKE_BINARY_DIR}/lib/libmtkahypard.pc
+               ${CMAKE_BINARY_DIR}/lib/libmtkahyparq.pc
+               ${CMAKE_BINARY_DIR}/lib/libmtkahypargraph.pc
+-              ${CMAKE_BINARY_DIR}/lib/libmtkahypargq.pc
+         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig)
+ 
+ configure_file(cmake_uninstall.cmake.in cmake_uninstall.cmake IMMEDIATE @ONLY)
+@@ -62,4 +51,4 @@ add_custom_target(install.mtkahypar
+     ${CMAKE_COMMAND}
+     -DBUILD_TYPE=${CMAKE_BUILD_TYPE}
+     -P ${CMAKE_BINARY_DIR}/cmake_install.cmake)
+-ADD_DEPENDENCIES(install.mtkahypar mtkahypard mtkahyparq mtkahypargraph mtkahypargq)
+\ No newline at end of file
++ADD_DEPENDENCIES(install.mtkahypar mtkahypard mtkahyparq mtkahypargraph)
+\ No newline at end of file
+diff --git a/lib/libmtkahypar.cc b/lib/libmtkahypar.cc
+index 1523ab65..37129c84 100644
+--- a/lib/libmtkahypar.cc
++++ b/lib/libmtkahypar.cc
+@@ -20,6 +20,7 @@
+  ******************************************************************************/
+ 
+ #include "libmtkahypar.h"
++#include <vector>
+ 
+ #include "tbb/parallel_for.h"
+ #include "tbb/parallel_invoke.h"
+@@ -152,7 +153,8 @@ void mt_kahypar_partition(const mt_kahypar_hypernode_id_t num_vertices,
+                           mt_kahypar_hyperedge_weight_t* objective,
+                           mt_kahypar_context_t* kahypar_context,
+                           mt_kahypar_partition_id_t* partition,
+-                          const bool verbose) {
++                          const bool verbose,
++                          const bool noMotif) {
+   mt_kahypar::Context context = *reinterpret_cast<mt_kahypar::Context*>(kahypar_context);
+   context.partition.k = num_blocks;
+   context.partition.epsilon = epsilon;
+@@ -183,10 +185,22 @@ void mt_kahypar_partition(const mt_kahypar_hypernode_id_t num_vertices,
+   mt_kahypar::PartitionedHypergraph partitioned_hypergraph =
+     mt_kahypar::partition(hypergraph, context);
+ 
++  if(noMotif == false) {
++    if(partitioned_hypergraph.partID(0)==partitioned_hypergraph.partID(partitioned_hypergraph.initialNumNodes()-1)){
++     //std::cout << "Adjusting for correctness." << std::endl;
++     partitioned_hypergraph.changeNodePart(0, partitioned_hypergraph.partID(0), 1-partitioned_hypergraph.partID(partitioned_hypergraph.initialNumNodes()-1));
++     //std::cout << "Updated Motif Conductance: " << metrics::motifConductance(hypergraph, context) << std::endl;
++    }
++  }
++  
++
+   // Store partition
+   *objective = mt_kahypar::metrics::objective(partitioned_hypergraph, context.partition.objective);
++  
++  //*motif_conductance = mt_kahypar::metrics::motifConductance(partitioned_hypergraph, context, hypernode_degrees);
++
+   ASSERT(partition != nullptr);
+   partitioned_hypergraph.doParallelForAllNodes([&](const mt_kahypar::HypernodeID& hn) {
+     partition[hn] = partitioned_hypergraph.partID(hn);
+   });
+-}
+\ No newline at end of file
++}
+diff --git a/mt-kahypar/application/CMakeLists.txt b/mt-kahypar/application/CMakeLists.txt
+index c64ab6a0..f644ec17 100644
+--- a/mt-kahypar/application/CMakeLists.txt
++++ b/mt-kahypar/application/CMakeLists.txt
+@@ -38,24 +38,12 @@ add_custom_command(TARGET MtKaHyParGraph PRE_BUILD
+       -E echo_append "${MT_KAHYPAR_VERSION_GIT_REFSPEC} at sha ${MT_KAHYPAR_VERSION_GIT_SHA1}" >
+       ${PROJECT_BINARY_DIR}/mt-kahypar/application/git_mt_kahypar_graph.txt)
+ 
+-add_executable(MtKaHyParGraphQuality kahypar.cc)
+-target_link_libraries(MtKaHyParGraphQuality ${Boost_LIBRARIES})
+-target_link_libraries(MtKaHyParGraphQuality pthread)
+-set_property(TARGET MtKaHyParGraphQuality PROPERTY CXX_STANDARD 17)
+-set_property(TARGET MtKaHyParGraphQuality PROPERTY CXX_STANDARD_REQUIRED ON)
+-target_compile_definitions(MtKaHyParGraphQuality PUBLIC USE_GRAPH_PARTITIONER USE_STRONG_PARTITIONER)
+-add_custom_command(TARGET MtKaHyParGraphQuality PRE_BUILD
+-    COMMAND ${CMAKE_COMMAND}
+-      -E echo_append "${MT_KAHYPAR_VERSION_GIT_REFSPEC} at sha ${MT_KAHYPAR_VERSION_GIT_SHA1}" >
+-      ${PROJECT_BINARY_DIR}/mt-kahypar/application/git_mt_kahypar_gq.txt)
+-
+ if(ENABLE_PROFILE MATCHES ON)
+   target_link_libraries(MtKaHyParWrapper ${PROFILE_FLAGS})
+   target_link_libraries(MtKaHyParDefault ${PROFILE_FLAGS})
+   target_link_libraries(MtKaHyParQuality ${PROFILE_FLAGS})
+   target_link_libraries(MtKaHyParGraph ${PROFILE_FLAGS})
+-  target_link_libraries(MtKaHyParGraphQuality ${PROFILE_FLAGS})
+ endif()
+ 
+ 
+-set(TARGETS_WANTING_ALL_SOURCES ${TARGETS_WANTING_ALL_SOURCES} MtKaHyParWrapper MtKaHyParDefault MtKaHyParQuality MtKaHyParGraph MtKaHyParGraphQuality PARENT_SCOPE)
+\ No newline at end of file
++set(TARGETS_WANTING_ALL_SOURCES ${TARGETS_WANTING_ALL_SOURCES} MtKaHyParWrapper MtKaHyParDefault MtKaHyParQuality MtKaHyParGraph PARENT_SCOPE)
+\ No newline at end of file
+diff --git a/mt-kahypar/application/mt_kahypar.cc.in b/mt-kahypar/application/mt_kahypar.cc.in
+index a374dad1..e80772a2 100644
+--- a/mt-kahypar/application/mt_kahypar.cc.in
++++ b/mt-kahypar/application/mt_kahypar.cc.in
+@@ -85,8 +85,10 @@ static void configureContext(mt_kahypar::Context& context) {
+ 
+   // Sanity Check
+   if ( context.partition.instance_type == mt_kahypar::InstanceType::graph &&
+-       ( context.partition.preset_type == mt_kahypar::PresetType::deterministic ) ) {
+-    ALGO_SWITCH("Graphs are not supported with deterministic preset. Do you want to switch to default preset (Y/N)?",
++       ( context.partition.preset_type == mt_kahypar::PresetType::quality_flows ||
++         context.partition.preset_type == mt_kahypar::PresetType::quality_preset ||
++         context.partition.preset_type == mt_kahypar::PresetType::deterministic ) ) {
++    ALGO_SWITCH("Graphs are only supported with default preset. Do you want to switch to default preset (Y/N)?",
+                 "Graphs are not supported with" << context.partition.preset_type << "preset.",
+                 context.partition.preset_type,
+                 use_flows ? mt_kahypar::PresetType::default_flows : mt_kahypar::PresetType::default_preset);
+@@ -111,11 +113,7 @@ static void configureContext(mt_kahypar::Context& context) {
+ 
+ static std::string getBinary(const mt_kahypar::Context& context) {
+   std::string binary = std::string(MT_KAHYPAR_BINARY_DIR) + "MtKaHyParDefault";
+-  if ( context.partition.instance_type == mt_kahypar::InstanceType::graph &&
+-        (context.partition.preset_type == mt_kahypar::PresetType::quality_preset ||
+-         context.partition.preset_type == mt_kahypar::PresetType::quality_flows) ) {
+-    binary = std::string(MT_KAHYPAR_BINARY_DIR) + "MtKaHyParGraphQuality";
+-  } else if ( context.partition.instance_type == mt_kahypar::InstanceType::graph ) {
++  if ( context.partition.instance_type == mt_kahypar::InstanceType::graph ) {
+     binary = std::string(MT_KAHYPAR_BINARY_DIR) + "MtKaHyParGraph";
+   } else if ( context.partition.preset_type == mt_kahypar::PresetType::quality_preset ||
+               context.partition.preset_type == mt_kahypar::PresetType::quality_flows ) {
+diff --git a/mt-kahypar/datastructures/CMakeLists.txt b/mt-kahypar/datastructures/CMakeLists.txt
+index e49ba311..66e18e65 100644
+--- a/mt-kahypar/datastructures/CMakeLists.txt
++++ b/mt-kahypar/datastructures/CMakeLists.txt
+@@ -2,15 +2,12 @@ set(DatastructureSources
+         contraction_tree.cpp
+         dynamic_hypergraph.cpp
+         dynamic_hypergraph_factory.cpp
+-        dynamic_graph.cpp
+-        dynamic_graph_factory.cpp
+         static_hypergraph_factory.cpp
+         static_hypergraph.cpp
+         static_graph_factory.cpp
+         static_graph.cpp
+         graph.cpp
+-        incident_net_array.cpp
+-        dynamic_adjacency_array.cpp)
++        incident_net_array.cpp)
+ 
+ foreach(modtarget IN LISTS TARGETS_WANTING_ALL_SOURCES)
+     target_sources(${modtarget} PRIVATE ${DatastructureSources})
+diff --git a/mt-kahypar/datastructures/contraction_tree.cpp b/mt-kahypar/datastructures/contraction_tree.cpp
+index b41fcf89..46e7df5e 100644
+--- a/mt-kahypar/datastructures/contraction_tree.cpp
++++ b/mt-kahypar/datastructures/contraction_tree.cpp
+@@ -21,8 +21,6 @@
+ 
+ #include "mt-kahypar/datastructures/contraction_tree.h"
+ 
+-#include <queue>
+-
+ #include <tbb/parallel_reduce.h>
+ #include <tbb/parallel_invoke.h>
+ #include <tbb/enumerable_thread_specific.h>
+@@ -170,7 +168,7 @@ void ContractionTree::finalize(const size_t num_versions) {
+ // ####################### Copy #######################
+ 
+ // ! Copy contraction tree in parallel
+-ContractionTree ContractionTree::copy(parallel_tag_t) const {
++ContractionTree ContractionTree::copy(parallel_tag_t) {
+   ContractionTree tree;
+ 
+   tree._num_hypernodes = _num_hypernodes;
+@@ -213,7 +211,7 @@ ContractionTree ContractionTree::copy(parallel_tag_t) const {
+ }
+ 
+ // ! Copy contraction tree sequentially
+-ContractionTree ContractionTree::copy() const {
++ContractionTree ContractionTree::copy() {
+   ContractionTree tree;
+ 
+   tree._num_hypernodes = _num_hypernodes;
+@@ -282,217 +280,5 @@ void ContractionTree::memoryConsumption(utils::MemoryTreeNode* parent) const {
+   parent->addChild("Incidence Array", sizeof(HypernodeID) * _incidence_array.size());
+ }
+ 
+-
+-using ContractionInterval = typename ContractionTree::Interval;
+-using ChildIterator = typename ContractionTree::ChildIterator;
+-
+-struct PQBatchUncontractionElement {
+-  int64_t _objective;
+-  std::pair<ChildIterator, ChildIterator> _iterator;
+-};
+-
+-struct PQElementComparator {
+-  bool operator()(const PQBatchUncontractionElement& lhs, const PQBatchUncontractionElement& rhs){
+-      return lhs._objective < rhs._objective;
+-  }
+-};
+-
+-bool ContractionTree::verifyBatchIndexAssignments(
+-  const BatchIndexAssigner& batch_assigner,
+-  const parallel::scalable_vector<parallel::scalable_vector<BatchAssignment>>& local_batch_assignments) const {
+-  parallel::scalable_vector<BatchAssignment> assignments;
+-  for ( size_t i = 0; i < local_batch_assignments.size(); ++i ) {
+-    for ( const BatchAssignment& batch_assign : local_batch_assignments[i] ) {
+-      assignments.push_back(batch_assign);
+-    }
+-  }
+-  std::sort(assignments.begin(), assignments.end(),
+-    [&](const BatchAssignment& lhs, const BatchAssignment& rhs) {
+-      return lhs.batch_index < rhs.batch_index ||
+-        (lhs.batch_index == rhs.batch_index && lhs.batch_pos < rhs.batch_pos);
+-    });
+-
+-  if ( assignments.size() > 0 ) {
+-    if ( assignments[0].batch_index != 0 || assignments[0].batch_pos != 0 ) {
+-      LOG << "First uncontraction should start at batch 0 at position 0"
+-          << V(assignments[0].batch_index) << V(assignments[0].batch_pos);
+-      return false;
+-    }
+-
+-    for ( size_t i = 1; i < assignments.size(); ++i ) {
+-      if ( assignments[i - 1].batch_index == assignments[i].batch_index ) {
+-        if ( assignments[i - 1].batch_pos + 1 != assignments[i].batch_pos ) {
+-          LOG << "Batch positions are not consecutive"
+-              << V(i) << V(assignments[i - 1].batch_pos) << V(assignments[i].batch_pos);
+-          return false;
+-        }
+-      } else {
+-        if ( assignments[i - 1].batch_index + 1 != assignments[i].batch_index ) {
+-          LOG << "Batch indices are not consecutive"
+-              << V(i) << V(assignments[i - 1].batch_index) << V(assignments[i].batch_index);
+-          return false;
+-        }
+-        if ( assignments[i].batch_pos != 0 ) {
+-          LOG << "First uncontraction of each batch should start at position 0"
+-              << V(assignments[i].batch_pos);
+-          return false;
+-        }
+-        if ( assignments[i - 1].batch_pos + 1 != batch_assigner.batchSize(assignments[i - 1].batch_index) ) {
+-          LOG << "Position of last uncontraction in batch" << assignments[i - 1].batch_index
+-              << "does not match size of batch"
+-              << V(assignments[i - 1].batch_pos) << V(batch_assigner.batchSize(assignments[i - 1].batch_index));
+-          return false;
+-        }
+-      }
+-    }
+-  }
+-
+-  return true;
+-}
+-
+-BatchVector ContractionTree::createBatchUncontractionHierarchyForVersion(BatchIndexAssigner& batch_assigner,
+-                                                                         const size_t version) {
+-
+-  using PQ = std::priority_queue<PQBatchUncontractionElement,
+-                                 parallel::scalable_vector<PQBatchUncontractionElement>,
+-                                 PQElementComparator>;
+-
+-  // Checks if two contraction intervals intersect
+-  auto does_interval_intersect = [&](const ContractionInterval& i1, const ContractionInterval& i2) {
+-    if (i1.start == kInvalidHypernode || i2.start == kInvalidHypernode) {
+-      return false;
+-    }
+-    return (i1.start <= i2.end && i1.end >= i2.end) ||
+-            (i2.start <= i1.end && i2.end >= i1.end);
+-  };
+-
+-  auto push_into_pq = [&](PQ& prio_q, const HypernodeID& u) {
+-    auto it = childs(u);
+-    auto current = it.begin();
+-    auto end = it.end();
+-    while ( current != end && this->version(*current) != version ) {
+-      ++current;
+-    }
+-    if ( current != end ) {
+-      prio_q.push(PQBatchUncontractionElement {
+-        subtreeSize(*current), std::make_pair(current, end) } );
+-    }
+-  };
+-
+-  // Distribute roots of the contraction tree to local priority queues of
+-  // each thread.
+-  const size_t num_hardware_threads = std::thread::hardware_concurrency();
+-  parallel::scalable_vector<PQ> local_pqs(num_hardware_threads);
+-  const parallel::scalable_vector<HypernodeID>& roots = roots_of_version(version);
+-  tbb::parallel_for(0UL, roots.size(), [&](const size_t i) {
+-    const int cpu_id = sched_getcpu();
+-    push_into_pq(local_pqs[cpu_id], roots[i]);
+-  });
+-
+-  using LocalBatchAssignments = parallel::scalable_vector<BatchAssignment>;
+-  parallel::scalable_vector<LocalBatchAssignments> local_batch_assignments(num_hardware_threads);
+-  parallel::scalable_vector<size_t> local_batch_indices(num_hardware_threads, 0);
+-  tbb::parallel_for(0UL, num_hardware_threads, [&](const size_t i) {
+-    size_t& current_batch_index = local_batch_indices[i];
+-    LocalBatchAssignments& batch_assignments = local_batch_assignments[i];
+-    PQ& pq = local_pqs[i];
+-    PQ next_pq;
+-
+-    while ( !pq.empty() ) {
+-      // Iterator over the childs of a active vertex
+-      auto it = pq.top()._iterator;
+-      ASSERT(it.first != it.second);
+-      const HypernodeID v = *it.first;
+-      ASSERT(this->version(v) == version);
+-      pq.pop();
+-
+-      const size_t start_idx = batch_assignments.size();
+-      size_t num_uncontractions = 1;
+-      const HypernodeID u = parent(v);
+-      batch_assignments.push_back(BatchAssignment { u, v, 0UL, 0UL });
+-      // Push contraction partner into pq for the next BFS level
+-      push_into_pq(next_pq, v);
+-
+-      // Insert all childs of u that intersect the contraction time interval of
+-      // (u,v) into the current batch
+-      ++it.first;
+-      ContractionInterval current_ival = interval(v);
+-      while ( it.first != it.second && this->version(*it.first) == version ) {
+-        const HypernodeID w = *it.first;
+-        const ContractionInterval w_ival = interval(w);
+-        if ( does_interval_intersect(current_ival, w_ival) ) {
+-          ASSERT(parent(w) == u);
+-          ++num_uncontractions;
+-          batch_assignments.push_back(BatchAssignment { u, w, 0UL, 0UL });
+-          current_ival.start = std::min(current_ival.start, w_ival.start);
+-          current_ival.end = std::max(current_ival.end, w_ival.end);
+-          push_into_pq(next_pq, w);
+-        } else {
+-          break;
+-        }
+-        ++it.first;
+-      }
+-
+-      // If there are still childs left of u, we push the iterator again into the
+-      // priority queue of the current BFS level.
+-      if ( it.first != it.second && this->version(*it.first) == version ) {
+-        pq.push(PQBatchUncontractionElement { subtreeSize(*it.first), it });
+-      }
+-
+-      // Request batch index and its position within that batch
+-      BatchAssignment assignment = batch_assigner.getBatchIndex(
+-        current_batch_index, num_uncontractions);
+-      for ( size_t j = start_idx; j < start_idx + num_uncontractions; ++j ) {
+-        batch_assignments[j].batch_index = assignment.batch_index;
+-        batch_assignments[j].batch_pos = assignment.batch_pos + (j - start_idx);
+-      }
+-      current_batch_index = assignment.batch_index;
+-
+-      if ( pq.empty() ) {
+-        std::swap(pq, next_pq);
+-        // Compute minimum batch index to which a thread assigned last.
+-        // Afterwards, transmit information to batch assigner to speed up
+-        // batch index computation.
+-        ++current_batch_index;
+-        size_t min_batch_index = current_batch_index;
+-        for ( const size_t& batch_index : local_batch_indices ) {
+-          min_batch_index = std::min(min_batch_index, batch_index);
+-        }
+-        batch_assigner.increaseHighWaterMark(min_batch_index);
+-      }
+-    }
+-  });
+-
+-  ASSERT(verifyBatchIndexAssignments(batch_assigner, local_batch_assignments), "Batch asisignment failed");
+-
+-  // In the previous step we have calculated for each uncontraction a batch index and
+-  // its position within that batch. We have to write the uncontractions
+-  // into the global batch uncontraction vector.
+-  const size_t num_batches = batch_assigner.numberOfNonEmptyBatches();
+-  BatchVector batches(num_batches);
+-  tbb::parallel_for(0UL, num_batches, [&](const size_t batch_index) {
+-    batches[batch_index].resize(batch_assigner.batchSize(batch_index));
+-  });
+-
+-  tbb::parallel_for(0UL, num_hardware_threads, [&](const size_t i) {
+-    LocalBatchAssignments& batch_assignments = local_batch_assignments[i];
+-    for ( const BatchAssignment& batch_assignment : batch_assignments ) {
+-      const size_t batch_index = batch_assignment.batch_index;
+-      const size_t batch_pos = batch_assignment.batch_pos;
+-      ASSERT(batch_index < batches.size());
+-      ASSERT(batch_pos < batches[batch_index].size());
+-      batches[batch_index][batch_pos].u = batch_assignment.u;
+-      batches[batch_index][batch_pos].v = batch_assignment.v;
+-    }
+-  });
+-
+-  while ( !batches.empty() && batches.back().empty() ) {
+-    batches.pop_back();
+-  }
+-  std::reverse(batches.begin(), batches.end());
+-
+-  return batches;
+-}
+-
+ }  // namespace ds
+ }  // namespace mt_kahypar
+diff --git a/mt-kahypar/datastructures/contraction_tree.h b/mt-kahypar/datastructures/contraction_tree.h
+index ad3b5a4a..c42e1ad8 100644
+--- a/mt-kahypar/datastructures/contraction_tree.h
++++ b/mt-kahypar/datastructures/contraction_tree.h
+@@ -33,120 +33,6 @@
+ namespace mt_kahypar {
+ namespace ds {
+ 
+-// Represents a uncontraction that is assigned to a certain batch
+-// and within that batch to a certain position.
+-struct BatchAssignment {
+-  HypernodeID u;
+-  HypernodeID v;
+-  size_t batch_index;
+-  size_t batch_pos;
+-};
+-
+-/*!
+-  * Helper class that synchronizes assignements of uncontractions
+-  * to batches. A batch has a certain maximum allowed batch size. The
+-  * class provides functionality to compute such an assignment in a
+-  * thread-safe manner. Several threads can request a batch index
+-  * and a position within that batch for its uncontraction it wants
+-  * to assign. The class guarantees that each combination of
+-  * (batch_index, batch_position) is unique and consecutive.
+-  * Furthermore, it is ensured that batch_position is always
+-  * smaller than max_batch_size.
+-  */
+-class BatchIndexAssigner {
+-
+-  using AtomicCounter = parallel::IntegralAtomicWrapper<size_t>;
+-
+-  public:
+-  explicit BatchIndexAssigner(const HypernodeID num_hypernodes,
+-                              const size_t max_batch_size) :
+-    _max_batch_size(max_batch_size),
+-    _high_water_mark(0),
+-    _current_batch_counter(num_hypernodes, AtomicCounter(0)),
+-    _current_batch_sizes(num_hypernodes, AtomicCounter(0)) { }
+-
+-  BatchAssignment getBatchIndex(const size_t min_required_batch,
+-                                const size_t num_uncontractions = 1) {
+-    if ( min_required_batch <= _high_water_mark ) {
+-      size_t current_high_water_mark = _high_water_mark.load();
+-      const BatchAssignment assignment = findBatchAssignment(
+-        current_high_water_mark, num_uncontractions);
+-
+-      // Update high water mark in case batch index is greater than
+-      // current high water mark
+-      size_t current_batch_index = assignment.batch_index;
+-      increaseHighWaterMark(current_batch_index);
+-      return assignment;
+-    } else {
+-      return findBatchAssignment(min_required_batch, num_uncontractions);
+-    }
+-  }
+-
+-  size_t batchSize(const size_t batch_index) const {
+-    ASSERT(batch_index < _current_batch_sizes.size());
+-    return _current_batch_sizes[batch_index];
+-  }
+-
+-  void increaseHighWaterMark(size_t new_high_water_mark) {
+-    size_t current_high_water_mark = _high_water_mark.load();
+-    while ( new_high_water_mark > current_high_water_mark ) {
+-      _high_water_mark.compare_exchange_strong(
+-        current_high_water_mark, new_high_water_mark);
+-    }
+-  }
+-
+-  size_t numberOfNonEmptyBatches() {
+-    size_t current_batch = _high_water_mark;
+-    if ( _current_batch_sizes[_high_water_mark] == 0 )  {
+-      while ( current_batch > 0 && _current_batch_sizes[current_batch] == 0 ) {
+-        --current_batch;
+-      }
+-      if ( _current_batch_sizes[current_batch] > 0 ) {
+-        ++current_batch;
+-      }
+-    } else {
+-      while ( _current_batch_sizes[current_batch] > 0 ) {
+-        ++current_batch;
+-      }
+-    }
+-    return current_batch;
+-  }
+-
+-  void reset(const size_t num_batches) {
+-    ASSERT(num_batches <= _current_batch_sizes.size());
+-    _high_water_mark = 0;
+-    tbb::parallel_for(0UL, num_batches, [&](const size_t i) {
+-      _current_batch_counter[i] = 0;
+-      _current_batch_sizes[i] = 0;
+-    });
+-  }
+-
+-  private:
+-  BatchAssignment findBatchAssignment(const size_t start_batch_index,
+-                                      const size_t num_uncontractions) {
+-    size_t current_batch_index = start_batch_index;
+-    size_t batch_pos = _current_batch_counter[current_batch_index].fetch_add(
+-      num_uncontractions, std::memory_order_relaxed);
+-    // Search for batch in which atomic update of the batch counter
+-    // return a position smaller than max_batch_size.
+-    while ( batch_pos >= _max_batch_size ) {
+-      ++current_batch_index;
+-      ASSERT(current_batch_index < _current_batch_counter.size());
+-      batch_pos = _current_batch_counter[current_batch_index].fetch_add(
+-        num_uncontractions, std::memory_order_relaxed);
+-    }
+-    ASSERT(batch_pos < _max_batch_size);
+-    _current_batch_sizes[current_batch_index] += num_uncontractions;
+-    return BatchAssignment { kInvalidHypernode,
+-      kInvalidHypernode, current_batch_index, batch_pos };
+-  }
+-
+-  const size_t _max_batch_size;
+-  AtomicCounter _high_water_mark;
+-  parallel::scalable_vector<AtomicCounter> _current_batch_counter;
+-  parallel::scalable_vector<AtomicCounter> _current_batch_sizes;
+-};
+-
+ class ContractionTree {
+ 
+   static constexpr bool debug = false;
+@@ -367,96 +253,6 @@ class ContractionTree {
+     node(v).setVersion(version);
+   }
+ 
+-  template<typename A, typename R>
+-  bool registerContraction(const HypernodeID u, const HypernodeID v, const size_t version, A acquire, R release) {
+-    // Acquires ownership of vertex v that gives the calling thread exclusive rights
+-    // to modify the contraction tree entry of v
+-    acquire(v);
+-
+-    // If there is no other contraction registered for vertex v
+-    // we try to determine its representative in the contraction tree
+-    if ( parent(v) == v ) {
+-
+-      HypernodeID w = u;
+-      bool cycle_detected = false;
+-      while ( true ) {
+-        // Search for representative of u in the contraction tree.
+-        // It is either a root of the contraction tree or a vertex
+-        // with a reference count greater than zero, which indicates
+-        // that there are still ongoing contractions on this node that
+-        // have to be processed.
+-        while ( parent(w) != w && pendingContractions(w) == 0 ) {
+-          w = parent(w);
+-          if ( w == v ) {
+-            cycle_detected = true;
+-            break;
+-          }
+-        }
+-
+-        if ( !cycle_detected ) {
+-          // In case contraction of u and v does not induce any
+-          // cycle in the contraction tree we try to acquire vertex w
+-          if ( w < v ) {
+-            // Acquire ownership in correct order to prevent deadlocks
+-            release(v);
+-            acquire(w);
+-            acquire(v);
+-            if ( parent(v) != v ) {
+-              release(v);
+-              release(w);
+-              return false;
+-            }
+-          } else {
+-            acquire(w);
+-          }
+-
+-          // Double-check condition of while loop above after acquiring
+-          // ownership of w
+-          if ( parent(w) != w && pendingContractions(w) == 0 ) {
+-            // In case something changed, we release ownership of w and
+-            // search again for the representative of u.
+-            release(w);
+-          } else {
+-            // Otherwise we perform final cycle check to verify that
+-            // contraction of u and v will not introduce any new cycle.
+-            HypernodeID x = w;
+-            do {
+-              x = parent(x);
+-              if ( x == v ) {
+-                cycle_detected = true;
+-                break;
+-              }
+-            } while ( parent(x) != x );
+-
+-            if ( cycle_detected ) {
+-              release(w);
+-              release(v);
+-              return false;
+-            }
+-
+-            // All checks succeded, we can safely increment the
+-            // reference count of w and update the contraction tree
+-            break;
+-          }
+-        } else {
+-          release(v);
+-          return false;
+-        }
+-      }
+-
+-      // Increment reference count of w indicating that there pending
+-      // contraction at vertex w and update contraction tree.
+-      registerContraction(w, v, version);
+-
+-      release(w);
+-      release(v);
+-      return true;
+-    } else {
+-      release(v);
+-      return false;
+-    }
+-  }
+-
+   // ! Unregisters a contraction in the contraction tree
+   void unregisterContraction(const HypernodeID u, const HypernodeID v,
+                              const Timepoint start, const Timepoint end,
+@@ -472,9 +268,6 @@ class ContractionTree {
+     }
+   }
+ 
+-  BatchVector createBatchUncontractionHierarchyForVersion(BatchIndexAssigner& batch_assigner,
+-                                                          const size_t version);
+-
+   // ! Only for testing
+   void setParent(const HypernodeID u, const HypernodeID v, const size_t version = 0) {
+     node(u).setParent(v);
+@@ -500,10 +293,10 @@ class ContractionTree {
+   // ####################### Copy #######################
+ 
+   // ! Copy contraction tree in parallel
+-  ContractionTree copy(parallel_tag_t) const;
++  ContractionTree copy(parallel_tag_t);
+ 
+   // ! Copy contraction tree sequentially
+-  ContractionTree copy() const;
++  ContractionTree copy();
+ 
+   // ! Resets internal data structures
+   void reset();
+@@ -525,10 +318,6 @@ class ContractionTree {
+     return const_cast<Node&>(static_cast<const ContractionTree&>(*this).node(u));
+   }
+ 
+-  bool verifyBatchIndexAssignments(
+-    const BatchIndexAssigner& batch_assigner,
+-    const parallel::scalable_vector<parallel::scalable_vector<BatchAssignment>>& local_batch_assignments) const;
+-
+   HypernodeID _num_hypernodes;
+   bool _finalized;
+   parallel::scalable_vector<Node> _tree;
+diff --git a/mt-kahypar/datastructures/delta_partitioned_graph.h b/mt-kahypar/datastructures/delta_partitioned_graph.h
+index a8dae29e..4abd8e2c 100644
+--- a/mt-kahypar/datastructures/delta_partitioned_graph.h
++++ b/mt-kahypar/datastructures/delta_partitioned_graph.h
+@@ -131,7 +131,7 @@ class DeltaPartitionedGraph {
+     return _pg->edgeTarget(e);
+   }
+ 
+-  // ! Source of an edge
++  // ! Target of an edge
+   HypernodeID edgeSource(const HyperedgeID e) const {
+     return _pg->edgeSource(e);
+   }
+@@ -245,7 +245,7 @@ class DeltaPartitionedGraph {
+     if (p == partID(edgeSource(e))) {
+       count++;
+     }
+-    if (!_pg->isSinglePin(e) && p == partID(edgeTarget(e))) {
++    if (p == partID(edgeTarget(e))) {
+       count++;
+     }
+     return count;
+diff --git a/mt-kahypar/datastructures/dynamic_hypergraph.cpp b/mt-kahypar/datastructures/dynamic_hypergraph.cpp
+index 4bbbcf17..a1c1986e 100644
+--- a/mt-kahypar/datastructures/dynamic_hypergraph.cpp
++++ b/mt-kahypar/datastructures/dynamic_hypergraph.cpp
+@@ -68,9 +68,94 @@ void DynamicHypergraph::updateTotalWeight() {
+  * The contraction can be executed by calling function contract(v, max_node_weight).
+  */
+ bool DynamicHypergraph::registerContraction(const HypernodeID u, const HypernodeID v) {
+-  return _contraction_tree.registerContraction(u, v, _version,
+-                                               [&](HypernodeID u) { acquireHypernode(u); },
+-                                               [&](HypernodeID u) { releaseHypernode(u); });
++  // Acquires ownership of vertex v that gives the calling thread exclusive rights
++  // to modify the contraction tree entry of v
++  acquireHypernode(v);
++
++  // If there is no other contraction registered for vertex v
++  // we try to determine its representative in the contraction tree
++  if ( _contraction_tree.parent(v) == v ) {
++
++    HypernodeID w = u;
++    bool cycle_detected = false;
++    while ( true ) {
++      // Search for representative of u in the contraction tree.
++      // It is either a root of the contraction tree or a vertex
++      // with a reference count greater than zero, which indicates
++      // that there are still ongoing contractions on this node that
++      // have to be processed.
++      while ( _contraction_tree.parent(w) != w &&
++              _contraction_tree.pendingContractions(w) == 0 ) {
++        w = _contraction_tree.parent(w);
++        if ( w == v ) {
++          cycle_detected = true;
++          break;
++        }
++      }
++
++      if ( !cycle_detected ) {
++        // In case contraction of u and v does not induce any
++        // cycle in the contraction tree we try to acquire vertex w
++        if ( w < v ) {
++          // Acquire ownership in correct order to prevent deadlocks
++          releaseHypernode(v);
++          acquireHypernode(w);
++          acquireHypernode(v);
++          if ( _contraction_tree.parent(v) != v ) {
++            releaseHypernode(v);
++            releaseHypernode(w);
++            return false;
++          }
++        } else {
++          acquireHypernode(w);
++        }
++
++        // Double-check condition of while loop above after acquiring
++        // ownership of w
++        if ( _contraction_tree.parent(w) != w &&
++              _contraction_tree.pendingContractions(w) == 0 ) {
++          // In case something changed, we release ownership of w and
++          // search again for the representative of u.
++          releaseHypernode(w);
++        } else {
++          // Otherwise we perform final cycle check to verify that
++          // contraction of u and v will not introduce any new cycle.
++          HypernodeID x = w;
++          do {
++            x = _contraction_tree.parent(x);
++            if ( x == v ) {
++              cycle_detected = true;
++              break;
++            }
++          } while ( _contraction_tree.parent(x) != x );
++
++          if ( cycle_detected ) {
++            releaseHypernode(w);
++            releaseHypernode(v);
++            return false;
++          }
++
++          // All checks succeded, we can safely increment the
++          // reference count of w and update the contraction tree
++          break;
++        }
++      } else {
++        releaseHypernode(v);
++        return false;
++      }
++    }
++
++    // Increment reference count of w indicating that there pending
++    // contraction at vertex w and update contraction tree.
++    _contraction_tree.registerContraction(w, v, _version);
++
++    releaseHypernode(w);
++    releaseHypernode(v);
++    return true;
++  } else {
++    releaseHypernode(v);
++    return false;
++  }
+ }
+ 
+ /**!
+@@ -252,7 +337,7 @@ VersionedBatchVector DynamicHypergraph::createBatchUncontractionHierarchy(const
+  * of a set of identical nets is aggregated in one representative hyperedge
+  * and single-pin hyperedges are removed. Returns a vector of removed hyperedges.
+  */
+-parallel::scalable_vector<DynamicHypergraph::ParallelHyperedge> DynamicHypergraph::removeSinglePinAndParallelHyperedges() {
++parallel::scalable_vector<ParallelHyperedge> DynamicHypergraph::removeSinglePinAndParallelHyperedges() {
+   _removable_single_pin_and_parallel_nets.reset();
+   // Remove singple-pin hyperedges directly from the hypergraph and
+   // insert all other hyperedges into a bucket data structure such that
+@@ -383,7 +468,7 @@ void DynamicHypergraph::restoreSinglePinAndParallelNets(const parallel::scalable
+ }
+ 
+ // ! Copy dynamic hypergraph in parallel
+-DynamicHypergraph DynamicHypergraph::copy(parallel_tag_t) const {
++DynamicHypergraph DynamicHypergraph::copy(parallel_tag_t) {
+   DynamicHypergraph hypergraph;
+ 
+   hypergraph._num_hypernodes = _num_hypernodes;
+@@ -439,7 +524,7 @@ DynamicHypergraph DynamicHypergraph::copy(parallel_tag_t) const {
+ }
+ 
+ // ! Copy dynamic hypergraph sequential
+-DynamicHypergraph DynamicHypergraph::copy() const {
++DynamicHypergraph DynamicHypergraph::copy() {
+   DynamicHypergraph hypergraph;
+ 
+   hypergraph._num_hypernodes = _num_hypernodes;
+@@ -705,6 +790,59 @@ size_t DynamicHypergraph::findPositionOfPinInIncidenceArray(const HypernodeID u,
+   return slot_of_u;
+ }
+ 
++bool DynamicHypergraph::verifyBatchIndexAssignments(
++  const BatchIndexAssigner& batch_assigner,
++  const parallel::scalable_vector<parallel::scalable_vector<BatchAssignment>>& local_batch_assignments) const {
++  parallel::scalable_vector<BatchAssignment> assignments;
++  for ( size_t i = 0; i < local_batch_assignments.size(); ++i ) {
++    for ( const BatchAssignment& batch_assign : local_batch_assignments[i] ) {
++      assignments.push_back(batch_assign);
++    }
++  }
++  std::sort(assignments.begin(), assignments.end(),
++    [&](const BatchAssignment& lhs, const BatchAssignment& rhs) {
++      return lhs.batch_index < rhs.batch_index ||
++        (lhs.batch_index == rhs.batch_index && lhs.batch_pos < rhs.batch_pos);
++    });
++
++  if ( assignments.size() > 0 ) {
++    if ( assignments[0].batch_index != 0 || assignments[0].batch_pos != 0 ) {
++      LOG << "First uncontraction should start at batch 0 at position 0"
++          << V(assignments[0].batch_index) << V(assignments[0].batch_pos);
++      return false;
++    }
++
++    for ( size_t i = 1; i < assignments.size(); ++i ) {
++      if ( assignments[i - 1].batch_index == assignments[i].batch_index ) {
++        if ( assignments[i - 1].batch_pos + 1 != assignments[i].batch_pos ) {
++          LOG << "Batch positions are not consecutive"
++              << V(i) << V(assignments[i - 1].batch_pos) << V(assignments[i].batch_pos);
++          return false;
++        }
++      } else {
++        if ( assignments[i - 1].batch_index + 1 != assignments[i].batch_index ) {
++          LOG << "Batch indices are not consecutive"
++              << V(i) << V(assignments[i - 1].batch_index) << V(assignments[i].batch_index);
++          return false;
++        }
++        if ( assignments[i].batch_pos != 0 ) {
++          LOG << "First uncontraction of each batch should start at position 0"
++              << V(assignments[i].batch_pos);
++          return false;
++        }
++        if ( assignments[i - 1].batch_pos + 1 != batch_assigner.batchSize(assignments[i - 1].batch_index) ) {
++          LOG << "Position of last uncontraction in batch" << assignments[i - 1].batch_index
++              << "does not match size of batch"
++              << V(assignments[i - 1].batch_pos) << V(batch_assigner.batchSize(assignments[i - 1].batch_index));
++          return false;
++        }
++      }
++    }
++  }
++
++  return true;
++}
++
+ /**
+  * Computes a batch uncontraction hierarchy for a specific version of the hypergraph.
+  * A batch is a vector of mementos (uncontractions) that are uncontracted in parallel.
+@@ -736,9 +874,149 @@ size_t DynamicHypergraph::findPositionOfPinInIncidenceArray(const HypernodeID u,
+  * local searches are more effective in early stages of the uncontraction hierarchy where hyperedge sizes are
+  * usually smaller than on the original hypergraph.
+  */
++
+ BatchVector DynamicHypergraph::createBatchUncontractionHierarchyForVersion(BatchIndexAssigner& batch_assigner,
+                                                                            const size_t version) {
+-  return _contraction_tree.createBatchUncontractionHierarchyForVersion(batch_assigner, version);
++
++  using PQ = std::priority_queue<PQBatchUncontractionElement,
++                                 parallel::scalable_vector<PQBatchUncontractionElement>,
++                                 PQElementComparator>;
++
++  // Checks if two contraction intervals intersect
++  auto does_interval_intersect = [&](const ContractionInterval& i1, const ContractionInterval& i2) {
++    if (i1.start == kInvalidHypernode || i2.start == kInvalidHypernode) {
++      return false;
++    }
++    return (i1.start <= i2.end && i1.end >= i2.end) ||
++            (i2.start <= i1.end && i2.end >= i1.end);
++  };
++
++  auto push_into_pq = [&](PQ& prio_q, const HypernodeID& u) {
++    auto it = _contraction_tree.childs(u);
++    auto current = it.begin();
++    auto end = it.end();
++    while ( current != end && _contraction_tree.version(*current) != version ) {
++      ++current;
++    }
++    if ( current != end ) {
++      prio_q.push(PQBatchUncontractionElement {
++        _contraction_tree.subtreeSize(*current), std::make_pair(current, end) } );
++    }
++  };
++
++  // Distribute roots of the contraction tree to local priority queues of
++  // each thread.
++  const size_t num_hardware_threads = std::thread::hardware_concurrency();
++  parallel::scalable_vector<PQ> local_pqs(num_hardware_threads);
++  const parallel::scalable_vector<HypernodeID>& roots = _contraction_tree.roots_of_version(version);
++  tbb::parallel_for(0UL, roots.size(), [&](const size_t i) {
++    const int cpu_id = sched_getcpu();
++    push_into_pq(local_pqs[cpu_id], roots[i]);
++  });
++
++  using LocalBatchAssignments = parallel::scalable_vector<BatchAssignment>;
++  parallel::scalable_vector<LocalBatchAssignments> local_batch_assignments(num_hardware_threads);
++  parallel::scalable_vector<size_t> local_batch_indices(num_hardware_threads, 0);
++  tbb::parallel_for(0UL, num_hardware_threads, [&](const size_t i) {
++    size_t& current_batch_index = local_batch_indices[i];
++    LocalBatchAssignments& batch_assignments = local_batch_assignments[i];
++    PQ& pq = local_pqs[i];
++    PQ next_pq;
++
++    while ( !pq.empty() ) {
++      // Iterator over the childs of a active vertex
++      auto it = pq.top()._iterator;
++      ASSERT(it.first != it.second);
++      const HypernodeID v = *it.first;
++      ASSERT(_contraction_tree.version(v) == version);
++      pq.pop();
++
++      const size_t start_idx = batch_assignments.size();
++      size_t num_uncontractions = 1;
++      const HypernodeID u = _contraction_tree.parent(v);
++      batch_assignments.push_back(BatchAssignment { u, v, 0UL, 0UL });
++      // Push contraction partner into pq for the next BFS level
++      push_into_pq(next_pq, v);
++
++      // Insert all childs of u that intersect the contraction time interval of
++      // (u,v) into the current batch
++      ++it.first;
++      ContractionInterval current_ival = _contraction_tree.interval(v);
++      while ( it.first != it.second && _contraction_tree.version(*it.first) == version ) {
++        const HypernodeID w = *it.first;
++        const ContractionInterval w_ival = _contraction_tree.interval(w);
++        if ( does_interval_intersect(current_ival, w_ival) ) {
++          ASSERT(_contraction_tree.parent(w) == u);
++          ++num_uncontractions;
++          batch_assignments.push_back(BatchAssignment { u, w, 0UL, 0UL });
++          current_ival.start = std::min(current_ival.start, w_ival.start);
++          current_ival.end = std::max(current_ival.end, w_ival.end);
++          push_into_pq(next_pq, w);
++        } else {
++          break;
++        }
++        ++it.first;
++      }
++
++      // If there are still childs left of u, we push the iterator again into the
++      // priority queue of the current BFS level.
++      if ( it.first != it.second && _contraction_tree.version(*it.first) == version ) {
++        pq.push(PQBatchUncontractionElement { _contraction_tree.subtreeSize(*it.first), it });
++      }
++
++      // Request batch index and its position within that batch
++      BatchAssignment assignment = batch_assigner.getBatchIndex(
++        current_batch_index, num_uncontractions);
++      for ( size_t j = start_idx; j < start_idx + num_uncontractions; ++j ) {
++        batch_assignments[j].batch_index = assignment.batch_index;
++        batch_assignments[j].batch_pos = assignment.batch_pos + (j - start_idx);
++      }
++      current_batch_index = assignment.batch_index;
++
++      if ( pq.empty() ) {
++        std::swap(pq, next_pq);
++        // Compute minimum batch index to which a thread assigned last.
++        // Afterwards, transmit information to batch assigner to speed up
++        // batch index computation.
++        ++current_batch_index;
++        size_t min_batch_index = current_batch_index;
++        for ( const size_t& batch_index : local_batch_indices ) {
++          min_batch_index = std::min(min_batch_index, batch_index);
++        }
++        batch_assigner.increaseHighWaterMark(min_batch_index);
++      }
++    }
++  });
++
++  ASSERT(verifyBatchIndexAssignments(batch_assigner, local_batch_assignments), "Batch asisignment failed");
++
++  // In the previous step we have calculated for each uncontraction a batch index and
++  // its position within that batch. We have to write the uncontractions
++  // into the global batch uncontraction vector.
++  const size_t num_batches = batch_assigner.numberOfNonEmptyBatches();
++  BatchVector batches(num_batches);
++  tbb::parallel_for(0UL, num_batches, [&](const size_t batch_index) {
++    batches[batch_index].resize(batch_assigner.batchSize(batch_index));
++  });
++
++  tbb::parallel_for(0UL, num_hardware_threads, [&](const size_t i) {
++    LocalBatchAssignments& batch_assignments = local_batch_assignments[i];
++    for ( const BatchAssignment& batch_assignment : batch_assignments ) {
++      const size_t batch_index = batch_assignment.batch_index;
++      const size_t batch_pos = batch_assignment.batch_pos;
++      ASSERT(batch_index < batches.size());
++      ASSERT(batch_pos < batches[batch_index].size());
++      batches[batch_index][batch_pos].u = batch_assignment.u;
++      batches[batch_index][batch_pos].v = batch_assignment.v;
++    }
++  });
++
++  while ( !batches.empty() && batches.back().empty() ) {
++    batches.pop_back();
++  }
++  std::reverse(batches.begin(), batches.end());
++
++  return batches;
+ }
+ 
+ } // namespace ds
+diff --git a/mt-kahypar/datastructures/dynamic_hypergraph.h b/mt-kahypar/datastructures/dynamic_hypergraph.h
+index 347b9e4b..87fca386 100644
+--- a/mt-kahypar/datastructures/dynamic_hypergraph.h
++++ b/mt-kahypar/datastructures/dynamic_hypergraph.h
+@@ -74,6 +74,120 @@ class DynamicHypergraph {
+     bool valid = false;
+   };
+ 
++  // Represents a uncontraction that is assigned to a certain batch
++  // and within that batch to a certain position.
++  struct BatchAssignment {
++    HypernodeID u;
++    HypernodeID v;
++    size_t batch_index;
++    size_t batch_pos;
++  };
++
++  /*!
++   * Helper class that synchronizes assignements of uncontractions
++   * to batches. A batch has a certain maximum allowed batch size. The
++   * class provides functionality to compute such an assignment in a
++   * thread-safe manner. Several threads can request a batch index
++   * and a position within that batch for its uncontraction it wants
++   * to assign. The class guarantees that each combination of
++   * (batch_index, batch_position) is unique and consecutive.
++   * Furthermore, it is ensured that batch_position is always
++   * smaller than max_batch_size.
++   */
++  class BatchIndexAssigner {
++
++    using AtomicCounter = parallel::IntegralAtomicWrapper<size_t>;
++
++   public:
++    explicit BatchIndexAssigner(const HypernodeID num_hypernodes,
++                                const size_t max_batch_size) :
++      _max_batch_size(max_batch_size),
++      _high_water_mark(0),
++      _current_batch_counter(num_hypernodes, AtomicCounter(0)),
++      _current_batch_sizes(num_hypernodes, AtomicCounter(0)) { }
++
++    BatchAssignment getBatchIndex(const size_t min_required_batch,
++                                  const size_t num_uncontractions = 1) {
++      if ( min_required_batch <= _high_water_mark ) {
++        size_t current_high_water_mark = _high_water_mark.load();
++        const BatchAssignment assignment = findBatchAssignment(
++          current_high_water_mark, num_uncontractions);
++
++        // Update high water mark in case batch index is greater than
++        // current high water mark
++        size_t current_batch_index = assignment.batch_index;
++        increaseHighWaterMark(current_batch_index);
++        return assignment;
++      } else {
++        return findBatchAssignment(min_required_batch, num_uncontractions);
++      }
++    }
++
++    size_t batchSize(const size_t batch_index) const {
++      ASSERT(batch_index < _current_batch_sizes.size());
++      return _current_batch_sizes[batch_index];
++    }
++
++    void increaseHighWaterMark(size_t new_high_water_mark) {
++      size_t current_high_water_mark = _high_water_mark.load();
++      while ( new_high_water_mark > current_high_water_mark ) {
++        _high_water_mark.compare_exchange_strong(
++          current_high_water_mark, new_high_water_mark);
++      }
++    }
++
++    size_t numberOfNonEmptyBatches() {
++      size_t current_batch = _high_water_mark;
++      if ( _current_batch_sizes[_high_water_mark] == 0 )  {
++        while ( current_batch > 0 && _current_batch_sizes[current_batch] == 0 ) {
++          --current_batch;
++        }
++        if ( _current_batch_sizes[current_batch] > 0 ) {
++          ++current_batch;
++        }
++      } else {
++        while ( _current_batch_sizes[current_batch] > 0 ) {
++          ++current_batch;
++        }
++      }
++      return current_batch;
++    }
++
++    void reset(const size_t num_batches) {
++      ASSERT(num_batches <= _current_batch_sizes.size());
++      _high_water_mark = 0;
++      tbb::parallel_for(0UL, num_batches, [&](const size_t i) {
++        _current_batch_counter[i] = 0;
++        _current_batch_sizes[i] = 0;
++      });
++    }
++
++   private:
++    BatchAssignment findBatchAssignment(const size_t start_batch_index,
++                                        const size_t num_uncontractions) {
++      size_t current_batch_index = start_batch_index;
++      size_t batch_pos = _current_batch_counter[current_batch_index].fetch_add(
++        num_uncontractions, std::memory_order_relaxed);
++      // Search for batch in which atomic update of the batch counter
++      // return a position smaller than max_batch_size.
++      while ( batch_pos >= _max_batch_size ) {
++        ++current_batch_index;
++        ASSERT(current_batch_index < _current_batch_counter.size());
++        batch_pos = _current_batch_counter[current_batch_index].fetch_add(
++          num_uncontractions, std::memory_order_relaxed);
++      }
++      ASSERT(batch_pos < _max_batch_size);
++      _current_batch_sizes[current_batch_index] += num_uncontractions;
++      return BatchAssignment { kInvalidHypernode,
++        kInvalidHypernode, current_batch_index, batch_pos };
++    }
++
++    const size_t _max_batch_size;
++    AtomicCounter _high_water_mark;
++    parallel::scalable_vector<AtomicCounter> _current_batch_counter;
++    parallel::scalable_vector<AtomicCounter> _current_batch_sizes;
++  };
++
+  private:
+   /**
+    * Represents a hypernode of the hypergraph and contains all information
+@@ -391,11 +505,6 @@ class DynamicHypergraph {
+   // ! Iterator to iterate over the incident nets of a hypernode
+   using IncidentNetsIterator = typename IncidentNetArray::const_iterator;
+ 
+-  struct ParallelHyperedge {
+-    HyperedgeID removed_hyperedge;
+-    HyperedgeID representative;
+-  };
+-
+   explicit DynamicHypergraph() :
+     _num_hypernodes(0),
+     _num_removed_hypernodes(0),
+@@ -873,10 +982,10 @@ class DynamicHypergraph {
+   // ####################### Copy #######################
+ 
+   // ! Copy dynamic hypergraph in parallel
+-  DynamicHypergraph copy(parallel_tag_t) const;
++  DynamicHypergraph copy(parallel_tag_t);
+ 
+   // ! Copy dynamic hypergraph sequential
+-  DynamicHypergraph copy() const;
++  DynamicHypergraph copy();
+ 
+   // ! Reset internal data structure
+   void reset() {
+@@ -1013,6 +1122,10 @@ class DynamicHypergraph {
+   MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE size_t findPositionOfPinInIncidenceArray(const HypernodeID u,
+                                                                               const HyperedgeID he);
+ 
++  bool verifyBatchIndexAssignments(
++    const BatchIndexAssigner& batch_assigner,
++    const parallel::scalable_vector<parallel::scalable_vector<BatchAssignment>>& local_batch_assignments) const;
++
+   /**
+    * Computes a batch uncontraction hierarchy for a specific version of the hypergraph.
+    * A batch is a vector of mementos (uncontractions) that are uncontracted in parallel.
+diff --git a/mt-kahypar/datastructures/graph.cpp b/mt-kahypar/datastructures/graph.cpp
+index 79b00dbb..2a8316b0 100644
+--- a/mt-kahypar/datastructures/graph.cpp
++++ b/mt-kahypar/datastructures/graph.cpp
+@@ -34,7 +34,7 @@
+ 
+ namespace mt_kahypar::ds {
+ 
+-  Graph::Graph(Hypergraph& hypergraph, const LouvainEdgeWeight edge_weight_type, bool is_graph) :
++  Graph::Graph(Hypergraph& hypergraph, const LouvainEdgeWeight edge_weight_type) :
+           _num_nodes(0),
+           _num_arcs(0),
+           _total_volume(0),
+@@ -46,7 +46,7 @@ namespace mt_kahypar::ds {
+ 
+     switch( edge_weight_type ) {
+       case LouvainEdgeWeight::uniform:
+-        construct(hypergraph, is_graph,
++        construct(hypergraph,
+                   [&](const HyperedgeWeight edge_weight,
+                       const HypernodeID,
+                       const HyperedgeID) {
+@@ -54,7 +54,7 @@ namespace mt_kahypar::ds {
+                   });
+         break;
+       case LouvainEdgeWeight::non_uniform:
+-        construct(hypergraph, is_graph,
++        construct(hypergraph,
+                   [&](const HyperedgeWeight edge_weight,
+                       const HypernodeID edge_size,
+                       const HyperedgeID) {
+@@ -63,7 +63,7 @@ namespace mt_kahypar::ds {
+                   });
+         break;
+       case LouvainEdgeWeight::degree:
+-        construct(hypergraph, is_graph,
++        construct(hypergraph,
+                   [&](const HyperedgeWeight edge_weight,
+                       const HypernodeID edge_size,
+                       const HyperedgeID node_degree) {
+@@ -374,18 +374,39 @@ namespace mt_kahypar::ds {
+    */
+   template<typename F>
+   void Graph::construct(const Hypergraph& hypergraph,
+-                        const bool is_graph,
+-                        const F& edge_weight_func) {
++                 const F& edge_weight_func) {
++    #ifndef USE_GRAPH_PARTITIONER
++    // Test, if hypergraph is actually a graph
++    const bool is_graph = tbb::parallel_reduce(tbb::blocked_range<HyperedgeID>(
++            ID(0), hypergraph.initialNumEdges()), true, [&](const tbb::blocked_range<HyperedgeID>& range, bool isGraph) {
++      if ( isGraph ) {
++        bool tmp_is_graph = isGraph;
++        for (HyperedgeID he = range.begin(); he < range.end(); ++he) {
++          if ( hypergraph.edgeIsEnabled(he) ) {
++            tmp_is_graph &= (hypergraph.edgeSize(he) == 2);
++          }
++        }
++        return tmp_is_graph;
++      }
++      return false;
++    }, [&](const bool lhs, const bool rhs) {
++      return lhs && rhs;
++    });
++
+     if ( is_graph ) {
+-      ASSERT(hypergraph.maxEdgeSize() == 2);
+       _num_nodes = hypergraph.initialNumNodes();
+-      _num_arcs = hypergraph.initialNumPins();
++      _num_arcs = 2 * hypergraph.initialNumEdges();
+       constructGraph(hypergraph, edge_weight_func);
+     } else {
+       _num_nodes = hypergraph.initialNumNodes() + hypergraph.initialNumEdges();
+       _num_arcs = 2 * hypergraph.initialNumPins();
+       constructBipartiteGraph(hypergraph, edge_weight_func);
+     }
++    #else
++      _num_nodes = hypergraph.initialNumNodes();
++      _num_arcs = hypergraph.initialNumEdges();
++      constructGraph(hypergraph, edge_weight_func);
++    #endif
+ 
+     // deterministic reduce of node volumes since double addition is not commutative or associative
+     // node volumes are computed in for loop because deterministic reduce does not have dynamic load balancing
+diff --git a/mt-kahypar/datastructures/graph.h b/mt-kahypar/datastructures/graph.h
+index 4ea43553..4f44d686 100644
+--- a/mt-kahypar/datastructures/graph.h
++++ b/mt-kahypar/datastructures/graph.h
+@@ -63,7 +63,7 @@ class Graph {
+   using AdjacenceIterator = typename ds::Array<Arc>::const_iterator;
+ 
+  public:
+-  Graph(Hypergraph& hypergraph, const LouvainEdgeWeight edge_weight_type, bool is_graph = false);
++  Graph(Hypergraph& hypergraph, const LouvainEdgeWeight edge_weight_type);
+   Graph(Graph&& other);
+   Graph& operator= (Graph&& other);
+   ~Graph();
+@@ -149,7 +149,7 @@ class Graph {
+    * Constructs a graph from a given hypergraph.
+    */
+   template<typename F>
+-  void construct(const Hypergraph& hypergraph, const bool is_graph, const F& edge_weight_func);
++  void construct(const Hypergraph& hypergraph, const F& edge_weight_func);
+ 
+   template<typename F>
+   void constructBipartiteGraph(const Hypergraph& hypergraph, F& edge_weight_func);
+diff --git a/mt-kahypar/datastructures/hypergraph_common.h b/mt-kahypar/datastructures/hypergraph_common.h
+index a01605a2..fc04a0ad 100644
+--- a/mt-kahypar/datastructures/hypergraph_common.h
++++ b/mt-kahypar/datastructures/hypergraph_common.h
+@@ -107,6 +107,12 @@ struct NoOpDeltaFunc {
+   void operator() (const HyperedgeID, const HyperedgeWeight, const HypernodeID, const HypernodeID, const HypernodeID) { }
+ };
+ 
++
++struct ParallelHyperedge {
++  HyperedgeID removed_hyperedge;
++  HyperedgeID representative;
++};
++
+ // ! Helper function to compute delta for cut-metric after changeNodePart
+ static HyperedgeWeight cutDelta(const HyperedgeID,
+                                 const HyperedgeWeight edge_weight,
+diff --git a/mt-kahypar/datastructures/incident_net_array.cpp b/mt-kahypar/datastructures/incident_net_array.cpp
+index de8cea19..33f03e9f 100644
+--- a/mt-kahypar/datastructures/incident_net_array.cpp
++++ b/mt-kahypar/datastructures/incident_net_array.cpp
+@@ -130,7 +130,18 @@ void IncidentNetArray::uncontract(const HypernodeID u,
+                                   const HypernodeID v,
+                                   const AcquireLockFunc& acquire_lock,
+                                   const ReleaseLockFunc& release_lock) {
+-  uncontract(u, v, [](HyperedgeID) {}, [](HyperedgeID) {}, acquire_lock, release_lock);
++  ASSERT(header(v)->prev != v);
++  Header* head_v = header(v);
++  acquire_lock(u);
++  // Restores the incident list of v to the time before it was appended
++  // to the double-linked list of u.
++  splice(u, v);
++  header(u)->degree -= head_v->degree;
++  ASSERT(verifyIteratorPointers(u), "Iterator pointers of vertex" << u << "are corrupted");
++  release_lock(u);
++
++  // Restore all incident nets of v removed by the contraction of u and v
++  restoreIncidentNets(v);
+ }
+ 
+ // ! Uncontract two previously contracted vertices u and v.
+@@ -197,7 +208,42 @@ void IncidentNetArray::removeIncidentNets(const HypernodeID u,
+ // ! between two consecutive calls to removeIncidentNets(...) must
+ // ! be processed.
+ void IncidentNetArray::restoreIncidentNets(const HypernodeID u) {
+-  restoreIncidentNets(u, [](HyperedgeID) {}, [](HyperedgeID) {});
++  Header* head_u = header(u);
++  HypernodeID current_u = u;
++  HypernodeID last_non_empty_entry = kInvalidHypernode;
++  do {
++    Header* head = header(current_u);
++    ASSERT(head->current_version > 0);
++    const HypernodeID new_version = --head->current_version;
++    const Entry* last_entry = reinterpret_cast<const Entry*>(header(current_u + 1));
++    // Iterate over non-active entries (and activate them) until the version number
++    // is not equal to the new version of the list
++    for ( Entry* current_entry = lastEntry(current_u); current_entry != last_entry; ++current_entry ) {
++      if ( current_entry->version == new_version ) {
++        ++head->size;
++        ++head_u->degree;
++      } else {
++        break;
++      }
++    }
++
++    // Restore iterator double-linked list which only contains
++    // non-empty incident net lists
++    if ( head->size > 0 || current_u == u ) {
++      if ( last_non_empty_entry != kInvalidHypernode &&
++           head->it_prev != last_non_empty_entry ) {
++        header(last_non_empty_entry)->it_next = current_u;
++        head->it_prev = last_non_empty_entry;
++      }
++      last_non_empty_entry = current_u;
++    }
++    current_u = head->next;
++  } while ( current_u != u );
++
++  ASSERT(last_non_empty_entry != kInvalidHypernode);
++  head_u->it_prev = last_non_empty_entry;
++  header(last_non_empty_entry)->it_next = u;
++  ASSERT(verifyIteratorPointers(u), "Iterator pointers of vertex" << u << "are corrupted");
+ }
+ 
+ // ! Restores all previously removed incident nets
+@@ -258,7 +304,7 @@ void IncidentNetArray::restoreIncidentNets(const HypernodeID u,
+   ASSERT(verifyIteratorPointers(u), "Iterator pointers of vertex" << u << "are corrupted");
+ }
+ 
+-IncidentNetArray IncidentNetArray::copy(parallel_tag_t) const {
++IncidentNetArray IncidentNetArray::copy(parallel_tag_t) {
+   IncidentNetArray incident_nets;
+   incident_nets._num_hypernodes = _num_hypernodes;
+   incident_nets._size_in_bytes = _size_in_bytes;
+@@ -275,7 +321,7 @@ IncidentNetArray IncidentNetArray::copy(parallel_tag_t) const {
+   return incident_nets;
+ }
+ 
+-IncidentNetArray IncidentNetArray::copy() const {
++IncidentNetArray IncidentNetArray::copy() {
+   IncidentNetArray incident_nets;
+   incident_nets._num_hypernodes = _num_hypernodes;
+   incident_nets._size_in_bytes = _size_in_bytes;
+diff --git a/mt-kahypar/datastructures/incident_net_array.h b/mt-kahypar/datastructures/incident_net_array.h
+index b7a6774e..06d5fe47 100644
+--- a/mt-kahypar/datastructures/incident_net_array.h
++++ b/mt-kahypar/datastructures/incident_net_array.h
+@@ -225,9 +225,9 @@ class IncidentNetArray {
+   // ! be processed.
+   void restoreIncidentNets(const HypernodeID u);
+ 
+-  IncidentNetArray copy(parallel_tag_t) const;
++  IncidentNetArray copy(parallel_tag_t);
+ 
+-  IncidentNetArray copy() const;
++  IncidentNetArray copy();
+ 
+   void reset();
+ 
+diff --git a/mt-kahypar/datastructures/partitioned_graph.h b/mt-kahypar/datastructures/partitioned_graph.h
+index d6670bef..1f0b84ed 100644
+--- a/mt-kahypar/datastructures/partitioned_graph.h
++++ b/mt-kahypar/datastructures/partitioned_graph.h
+@@ -32,13 +32,13 @@
+ 
+ #include "mt-kahypar/datastructures/hypergraph_common.h"
+ #include "mt-kahypar/datastructures/connectivity_set.h"
+-#include "mt-kahypar/datastructures/thread_safe_fast_reset_flag_array.h"
+ #include "mt-kahypar/parallel/atomic_wrapper.h"
+ #include "mt-kahypar/parallel/stl/scalable_vector.h"
+ #include "mt-kahypar/parallel/stl/thread_locals.h"
+ #include "mt-kahypar/utils/range.h"
+ #include "mt-kahypar/utils/timer.h"
+ 
++// TODO: option to deactivate gain cache
+ namespace mt_kahypar {
+ namespace ds {
+ 
+@@ -60,19 +60,90 @@ private:
+   enum class EdgeLockState : uint8_t {
+     UNCONTENDED = 0,
+     MOVING_SMALLER_ID_NODE = 1,
+-    MOVING_LARGER_ID_NODE = 2,
+-    LOCKED = 3
++    MOVING_LARGER_ID_NODE = 2
+   };
+ 
+-  // ! Multi-state lock to synchronize moves
+-  struct EdgeLock {
++  // ! Multi-state lock to synchronize moves. Hides ugly details behind a nice api.
++  class EdgeLock {
++   public:
+     EdgeLock() :
+-      state(0),
+-      move_target(kInvalidPartition) {
++      _state(UNCONTENDED),
++      _move_target(kInvalidPartition) {
++    }
++
++    // ! Returns whether the lock is in UNCONTENDED state.
++    bool isUncontended() const {
++      return _state.load(std::memory_order_relaxed) == UNCONTENDED;
++    }
++
++    // ! Returns whether the lock is currently locked.
++    bool isLocked() const {
++      return _state.load(std::memory_order_relaxed) == LOCKED;
++    }
++
++    // ! Returns whether locking was successful and the partition id.
++    MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
++    std::pair<bool, PartitionID> tryLock(EdgeLockState expected) {
++      uint8_t expected_val = static_cast<uint8_t>(expected);
++      if (_state.compare_exchange_weak(expected_val, LOCKED, std::memory_order_acquire)) {
++        return {true, _move_target};
++      } else {
++        return {false, kInvalidPartition};
++      }
++    }
++
++    // ! Returns the previous state and the partition id.
++    MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
++    std::pair<EdgeLockState, PartitionID> lock(bool smaller_id) {
++      uint8_t expected = moveStateValue(!smaller_id);
++      while (!_state.compare_exchange_weak(expected, LOCKED, std::memory_order_acquire)) {
++        ASSERT(expected < 4);
++        if (expected == LOCKED) {
++          expected = moveStateValue(!smaller_id);
++        }
++      }
++      return {static_cast<EdgeLockState>(expected), _move_target};
++    }
++
++    // ! Unlocks and sets the state to uncontended.
++    MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
++    void unlock() {
++      ASSERT(_state.load() == LOCKED);
++      _move_target = kInvalidPartition;
++      _state.store(UNCONTENDED, std::memory_order_release);
++    }
++
++    // ! Unlocks, sets the state to moving and sets the partition id.
++    MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
++    void unlockMoving(bool smaller_id, PartitionID target) {
++      ASSERT(_state.load() == LOCKED);
++      _move_target = target;
++      _state.store(moveStateValue(smaller_id), std::memory_order_release);
+     }
+ 
+-    CAtomic<uint32_t> state;
+-    PartitionID move_target;
++    // ! Resets the state to uncontended.
++    MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
++    void reset() {
++      ASSERT(_state.load() != LOCKED);
++      _move_target = kInvalidPartition;
++      _state.store(UNCONTENDED, std::memory_order_release);
++    }
++
++    MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
++    static EdgeLockState moveState(bool smaller_id) {
++      return smaller_id ? EdgeLockState::MOVING_SMALLER_ID_NODE : EdgeLockState::MOVING_LARGER_ID_NODE;
++    }
++
++    MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
++    static uint8_t moveStateValue(bool smaller_id) {
++      return static_cast<uint8_t>(moveState(smaller_id));
++    }
++
++   private:
++    static const uint8_t LOCKED = 3;
++    static const uint8_t UNCONTENDED = static_cast<uint8_t>(EdgeLockState::UNCONTENDED);
++    CAtomic<uint8_t> _state;
++    PartitionID _move_target;
+   };
+ 
+   class ConnectivityIterator :
+@@ -145,7 +216,6 @@ private:
+   static constexpr bool supports_connectivity_set = true;
+ 
+   static constexpr HyperedgeID HIGH_DEGREE_THRESHOLD = ID(100000);
+-  static constexpr size_t SIZE_OF_EDGE_LOCK = sizeof(EdgeLock);
+ 
+   using HypernodeIterator = typename Hypergraph::HypernodeIterator;
+   using HyperedgeIterator = typename Hypergraph::HyperedgeIterator;
+@@ -157,16 +227,16 @@ private:
+   explicit PartitionedGraph(const PartitionID k,
+                             Hypergraph& hypergraph) :
+     _is_gain_cache_initialized(false),
+-    _top_level_num_nodes(hypergraph.initialNumNodes()),
+     _k(k),
+     _hg(&hypergraph),
+     _part_weights(k, CAtomic<HypernodeWeight>(0)),
+     _part_ids(
+       "Refinement", "part_ids", hypergraph.initialNumNodes(), false, false),
+-    _incident_weight_in_part(),
++    _incident_weight_in_part(
++      "Refinement", "incident_weight_in_part",
++      static_cast<size_t>(hypergraph.initialNumNodes()) * static_cast<size_t>(k), true, false),
+     _edge_locks(
+-      "Refinement", "edge_locks", hypergraph.maxUniqueID(), false, false),
+-    _edge_markers(Hypergraph::is_static_hypergraph ? 0 : hypergraph.maxUniqueID()) {
++      "Refinement", "edge_locks", hypergraph.initialNumEdges() / 2, false, false) {
+     _part_ids.assign(hypergraph.initialNumNodes(), CAtomic<PartitionID>(kInvalidPartition), false);
+   }
+ 
+@@ -174,26 +244,24 @@ private:
+                             Hypergraph& hypergraph,
+                             parallel_tag_t) :
+     _is_gain_cache_initialized(false),
+-    _top_level_num_nodes(hypergraph.initialNumNodes()),
+     _k(k),
+     _hg(&hypergraph),
+     _part_weights(k, CAtomic<HypernodeWeight>(0)),
+     _part_ids(),
+     _incident_weight_in_part(),
+-    _edge_locks(),
+-    _edge_markers() {
++    _edge_locks() {
+     tbb::parallel_invoke([&] {
+       _part_ids.resize(
+-        "Refinement", "part_ids", hypergraph.initialNumNodes());
++        "Refinement", "vertex_part_info", hypergraph.initialNumNodes());
+       _part_ids.assign(hypergraph.initialNumNodes(), CAtomic<PartitionID>(kInvalidPartition));
+     }, [&] {
+-      _edge_locks.resize(
+-        "Refinement", "edge_locks", static_cast<size_t>(hypergraph.maxUniqueID()));
+-      _edge_locks.assign(hypergraph.maxUniqueID(), EdgeLock());
++      _incident_weight_in_part.resize(
++        "Refinement", "incident_weight_in_part",
++        static_cast<size_t>(hypergraph.initialNumNodes()) * static_cast<size_t>(k), true);
+     }, [&] {
+-      if (!Hypergraph::is_static_hypergraph) {
+-        _edge_markers.setSize(hypergraph.maxUniqueID());
+-      }
++      _edge_locks.resize(
++        "Refinement", "edge_locks", static_cast<size_t>(hypergraph.initialNumEdges() / 2));
++      _edge_locks.assign(hypergraph.initialNumEdges() / 2, EdgeLock());
+     });
+   }
+ 
+@@ -209,7 +277,6 @@ private:
+ 
+   void resetData() {
+     _is_gain_cache_initialized = false;
+-    resetMoveState();
+     tbb::parallel_invoke([&] {
+     }, [&] {
+       _part_ids.assign(_part_ids.size(), CAtomic<PartitionID>(kInvalidPartition));
+@@ -307,8 +374,9 @@ private:
+   IteratorRange<ConnectivityIterator> connectivitySet(const HyperedgeID e) const {
+     ASSERT(_hg->edgeIsEnabled(e), "Hyperedge" << e << "is disabled");
+     ASSERT(e < _hg->initialNumEdges(), "Hyperedge" << e << "does not exist");
+-    PartitionID first = partID(edgeSource(e));
+-    PartitionID second = partID(edgeTarget(e));
++    IncidenceIterator pin_it = _hg->pins(e).begin();
++    PartitionID first = partID(*pin_it);
++    PartitionID second = partID(*(++pin_it));
+     return IteratorRange<ConnectivityIterator>(
+       ConnectivityIterator(first, second, 0),
+       ConnectivityIterator(first, second, 2));
+@@ -355,22 +423,17 @@ private:
+     return _hg->edgeTarget(e);
+   }
+ 
+-  // ! Source of an edge
++  // ! Target of an edge
+   HypernodeID edgeSource(const HyperedgeID e) const {
+     return _hg->edgeSource(e);
+   }
+ 
+-  // ! Whether the edge is a single pin edge
+-  bool isSinglePin(const HyperedgeID e) const {
+-    return _hg->isSinglePin(e);
+-  }
+-
+   // ! Weight of a hyperedge
+   HypernodeWeight edgeWeight(const HyperedgeID e) const {
+     return _hg->edgeWeight(e);
+   }
+ 
+-  // ! Unique id of a hyperedge
++  // ! Unique id of a hyperedge, in the range of [0, initialNumEdges() / 2)
+   HyperedgeID uniqueEdgeID(const HyperedgeID e) const {
+     return _hg->uniqueEdgeID(e);
+   }
+@@ -393,39 +456,7 @@ private:
+   // ####################### Uncontraction #######################
+ 
+   void uncontract(const Batch& batch) {
+-    resetMoveState();
+-    // Set block ids of contraction partners
+-    tbb::parallel_for(0UL, batch.size(), [&](const size_t i) {
+-      const Memento& memento = batch[i];
+-      ASSERT(nodeIsEnabled(memento.u));
+-      ASSERT(!nodeIsEnabled(memento.v));
+-      const PartitionID part_id = partID(memento.u);
+-      ASSERT(part_id != kInvalidPartition && part_id < _k);
+-      setOnlyNodePart(memento.v, part_id);
+-    });
+-
+-    _hg->uncontract(batch,
+-      [&](const HyperedgeID e) { return !_edge_markers.compare_and_set_to_true(uniqueEdgeID(e)); },
+-      [&](const HypernodeID u, const HypernodeID v, const HyperedgeID e) {
+-        // In this case, e was a single pin edge before uncontraction
+-        if ( _is_gain_cache_initialized ) {
+-          // the edge weight is added to u and v
+-          const PartitionID block = partID(u);
+-          const HyperedgeWeight we = edgeWeight(e);
+-          _incident_weight_in_part[incident_weight_index(u, block)].fetch_add(we, std::memory_order_relaxed);
+-          _incident_weight_in_part[incident_weight_index(v, block)].fetch_add(we, std::memory_order_relaxed);
+-        }
+-      },
+-      [&](const HypernodeID u, const HypernodeID v, const HyperedgeID e) {
+-        // In this case, u is replaced by v in e
+-        if ( _is_gain_cache_initialized ) {
+-          // the edge weight shifts from u to v
+-          const PartitionID targetBlock = partID(edgeTarget(e));
+-          const HyperedgeWeight we = edgeWeight(e);
+-          _incident_weight_in_part[incident_weight_index(u, targetBlock)].fetch_sub(we, std::memory_order_relaxed);
+-          _incident_weight_in_part[incident_weight_index(v, targetBlock)].fetch_add(we, std::memory_order_relaxed);
+-        }
+-      });
++    _hg->uncontract(batch);
+   }
+ 
+   // ####################### Restore Hyperedges #######################
+@@ -434,8 +465,7 @@ private:
+     _hg->restoreLargeEdge(he);
+   }
+ 
+-  void restoreSinglePinAndParallelNets(const parallel::scalable_vector<typename Hypergraph::ParallelHyperedge>& hes_to_restore) {
+-    _edge_markers.reset();
++  void restoreSinglePinAndParallelNets(const parallel::scalable_vector<ParallelHyperedge>& hes_to_restore) {
+     _hg->restoreSinglePinAndParallelNets(hes_to_restore);
+   }
+ 
+@@ -571,7 +601,7 @@ private:
+     if (p == partID(edgeSource(e))) {
+       count++;
+     }
+-    if (!isSinglePin(e) && p == partID(edgeTarget(e))) {
++    if (p == partID(edgeTarget(e))) {
+       count++;
+     }
+     return count;
+@@ -594,9 +624,7 @@ private:
+ 
+   void initializeGainCacheEntry(const HypernodeID u, parallel::scalable_vector<Gain>& penalty_aggregator) {
+     for (HyperedgeID e : incidentEdges(u)) {
+-      if (!isSinglePin(e)) {
+-        penalty_aggregator[partID(edgeTarget(e))] += edgeWeight(e);
+-      }
++      penalty_aggregator[partID(edgeTarget(e))] += edgeWeight(e);
+     }
+ 
+     for (PartitionID i = 0; i < _k; ++i) {
+@@ -626,8 +654,6 @@ private:
+ 
+   // ! Initialize gain cache
+   void initializeGainCache() {
+-    allocateGainTableIfNecessary();
+-
+     // assert that part has been initialized
+     ASSERT(std::none_of(nodes().begin(), nodes().end(),
+                             [&](HypernodeID u) { return partID(u) == kInvalidPartition || partID(u) > k(); }) );
+@@ -638,9 +664,9 @@ private:
+ 
+     // Calculate gain in parallel over all edges. Note that because the edges
+     // are grouped by source node, this is still cache-efficient.
+-    doParallelForAllEdges([&](const HyperedgeID e) {
++    tbb::parallel_for(ID(0), _hg->initialNumEdges(), [&](const HyperedgeID e) {
+       const HypernodeID node = edgeSource(e);
+-      if (nodeIsEnabled(node) && !isSinglePin(e)) {
++      if (nodeIsEnabled(node)) {
+         size_t index = incident_weight_index(node, partID(edgeTarget(e)));
+         _incident_weight_in_part[index].fetch_add(edgeWeight(e), std::memory_order_relaxed);
+       }
+@@ -665,16 +691,16 @@ private:
+   // ! 2. Nodes are reassigned (via setOnlyNodePart() or changeNodePart() without a delta function)
+   // ! 3. Nodes are moved again
+   // ! Then, resetMoveState() must be called between steps 2 and 3.
+-  void resetMoveState() {
+-    if (_lock_treshold > std::numeric_limits<typeof(_lock_treshold)>::max() - 3) {
+-      tbb::parallel_for(ID(0), _hg->maxUniqueID(), [&](const HyperedgeID id) {
+-        _edge_locks[id].state.store(0, std::memory_order_relaxed);
++  void resetMoveState(bool parallel) {
++    if (parallel) {
++      tbb::parallel_for(ID(0), _hg->initialNumEdges() / 2, [&](const HyperedgeID id) {
++        _edge_locks[id].reset();
+       });
+-      _lock_treshold = 0;
+     } else {
+-      _lock_treshold += 3;
++      for (HyperedgeID id = 0; id < _hg->initialNumEdges() / 2; ++id) {
++        _edge_locks[id].reset();
++      }
+     }
+-    moveAssertions();
+   }
+ 
+   // ! Only for testing
+@@ -688,23 +714,9 @@ private:
+     }
+   }
+ 
+-  void allocateGainTableIfNecessary() {
+-    if (_incident_weight_in_part.size() == 0) {
+-      _incident_weight_in_part.resize("Refinement", "incident_weight_in_part", _top_level_num_nodes * size_t(_k), true);
+-    }
+-  }
+-
+-
+   // ! Only for testing
+   HyperedgeWeight moveFromBenefitRecomputed(const HypernodeID u) const {
+-    PartitionID part_id = partID(u);
+-    HyperedgeWeight w = 0;
+-    for (HyperedgeID e : incidentEdges(u)) {
+-      if (!isSinglePin(e) && partID(edgeTarget(e)) == part_id) {
+-        w -= edgeWeight(e);
+-      }
+-    }
+-    return w;
++    return 0;
+   }
+ 
+   // ! Only for testing
+@@ -712,7 +724,9 @@ private:
+     PartitionID part_id = partID(u);
+     HyperedgeWeight w = 0;
+     for (HyperedgeID e : incidentEdges(u)) {
+-      if (!isSinglePin(e) && partID(edgeTarget(e)) == p) {
++      if (edgeTarget(e) == part_id) {
++        w += edgeWeight(e);
++      } else if (edgeTarget(e) == p) {
+         w -= edgeWeight(e);
+       }
+     }
+@@ -894,12 +908,10 @@ private:
+         DBG << "<<< Start changing node part: " << V(u) << " - " << V(from) << " - " << V(to);
+         parallel::scalable_vector<std::pair<HyperedgeID, PartitionID>> locks_to_restore;
+         for (const HyperedgeID edge : incidentEdges(u)) {
+-          if (!isSinglePin(edge)) {
+-            const PartitionID target_part = targetPartWithLockSynchronization(u, to, edge, locks_to_restore);
+-            const HypernodeID pin_count_in_from_part_after = target_part == from ? 1 : 0;
+-            const HypernodeID pin_count_in_to_part_after = target_part == to ? 2 : 1;
+-            delta_func(edge, edgeWeight(edge), edgeSize(edge), pin_count_in_from_part_after, pin_count_in_to_part_after);
+-          }
++          const PartitionID target_part = targetPartWithLockSynchronization(u, to, edge, locks_to_restore);
++          const HypernodeID pin_count_in_from_part_after = target_part == from ? 1 : 0;
++          const HypernodeID pin_count_in_to_part_after = target_part == to ? 2 : 1;
++          delta_func(edge, edgeWeight(edge), edgeSize(edge), pin_count_in_from_part_after, pin_count_in_to_part_after);
+         }
+         _part_ids[u].store(to, std::memory_order_relaxed);
+         DBG << "Done changing node part: " << V(u) << " >>>";
+@@ -923,21 +935,21 @@ private:
+                                                 const HyperedgeID edge,
+                                                 parallel::scalable_vector<std::pair<HyperedgeID, PartitionID>>& locks_to_restore) {
+     const HypernodeID v = edgeTarget(edge);
+-    ASSERT(u != v);
+     const bool is_smaller_id = u < v;
+-    EdgeLock& e_lock = _edge_locks[_hg->uniqueEdgeID(edge)];
+-    const auto [state, part_id] = lock(e_lock, is_smaller_id);
++    EdgeLock& lock = _edge_locks[_hg->uniqueEdgeID(edge)];
++    const auto [state, part_id] = lock.lock(is_smaller_id);
+     PartitionID target_part;
+     if (state == EdgeLockState::UNCONTENDED) {
++      ASSERT(part_id == kInvalidPartition);
+       target_part = partID(v);
+       DBG << "EdgeLockState::UNCONTENDED: " << V(u) << " - " << V(v);
+-    } else if (state == moveState(is_smaller_id)) {
++    } else if (state == EdgeLock::moveState(is_smaller_id)) {
+       // this state means u was already moved previously
+       ASSERT(part_id == partID(u), "Lock in invalid state: " << V(part_id) << " - "
+              << V(partID(u)) << " - " << V(to) << " - was resetMoveState() called properly?");
+       target_part = partID(v);
+       DBG << "EdgeLock::moveState(is_smaller_id): " << V(u) << " - " << V(v);
+-    } else if (state == moveState(!is_smaller_id)) {
++    } else if (state == EdgeLock::moveState(!is_smaller_id)) {
+       // this state means v might be moved concurrently
+       target_part = part_id;
+       DBG << "EdgeLock::moveState(!is_smaller_id): " << V(u) << " - " << V(v);
+@@ -950,7 +962,7 @@ private:
+     } else {
+       ALWAYS_ASSERT(false, "unreachable");
+     }
+-    unlockMoving(e_lock, is_smaller_id, to);
++    lock.unlockMoving(is_smaller_id, to);
+     return target_part;
+   }
+ 
+@@ -958,19 +970,19 @@ private:
+       for (const auto& [edge, part_id] : locks_to_restore) {
+         const HypernodeID v = edgeTarget(edge);
+         const bool is_smaller_id = u < v;
+-        EdgeLock& e_lock = _edge_locks[_hg->uniqueEdgeID(edge)];
+-        ASSERT(!isUncontended(e_lock));
+-        const auto [success, lock_part_id] = tryLock(e_lock, moveState(is_smaller_id));
++        EdgeLock& lock = _edge_locks[_hg->uniqueEdgeID(edge)];
++        ASSERT(!lock.isUncontended());
++        const auto [success, lock_part_id] = lock.tryLock(EdgeLock::moveState(is_smaller_id));
+         if (success) {
+           ASSERT(lock_part_id == partID(u));
+           if (partID(v) != part_id) {
+             DBG << "Reset to moving: " << V(u) << " - " << V(v);
+             // reset lock to moving state for v
+-            unlockMoving(e_lock, !is_smaller_id, part_id);
++            lock.unlockMoving(!is_smaller_id, part_id);
+           } else {
+             DBG << "Reset to uncontended: " << V(u) << " - " << V(v);
+             // reset lock to uncontended state
+-            unlock(e_lock);
++            lock.unlock();
+           }
+         }
+       }
+@@ -997,8 +1009,8 @@ private:
+   void moveAssertions() {
+     HEAVY_REFINEMENT_ASSERT(
+       [&]{
+-        for (size_t id = 0; id < _hg->maxUniqueID(); ++id) {
+-          if (!isUncontended(_edge_locks[id])) {
++        for (size_t id = 0; id < _hg->initialNumEdges() / 2; ++id) {
++          if (!_edge_locks[id].isUncontended()) {
+             return false;
+           }
+         }
+@@ -1008,78 +1020,9 @@ private:
+     );
+   }
+ 
+-  // ####################### Edge Locks #######################
+-
+-  // ! Returns whether the lock is in UNCONTENDED state.
+-  bool isUncontended(const EdgeLock& e_lock) const {
+-    return lockState(e_lock.state.load(std::memory_order_relaxed)) == EdgeLockState::UNCONTENDED;
+-  }
+-
+-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+-  EdgeLockState lockState(uint32_t value) const {
+-    if (value <= _lock_treshold) {
+-      return EdgeLockState::UNCONTENDED;
+-    }
+-    return static_cast<EdgeLockState>(value - _lock_treshold);
+-  }
+-
+-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+-  uint32_t lockValue(EdgeLockState state) const {
+-    return _lock_treshold + static_cast<uint32_t>(state);
+-  }
+-
+-  // ! Returns whether locking was successful and the partition id.
+-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+-  std::pair<bool, PartitionID> tryLock(EdgeLock& e_lock, EdgeLockState expected) {
+-    const uint32_t locked = lockValue(EdgeLockState::LOCKED);
+-    uint32_t expected_val = lockValue(expected);
+-    if (e_lock.state.compare_exchange_weak(expected_val, locked, std::memory_order_acquire)) {
+-      return {true, e_lock.move_target};
+-    } else {
+-      return {false, kInvalidPartition};
+-    }
+-  }
+-
+-  // ! Returns the previous state and the partition id.
+-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+-  std::pair<EdgeLockState, PartitionID> lock(EdgeLock& e_lock, bool smaller_id) {
+-    const uint32_t locked = lockValue(EdgeLockState::LOCKED);
+-    uint32_t expected_val = lockValue(moveState(!smaller_id));
+-    while (!e_lock.state.compare_exchange_weak(expected_val, locked, std::memory_order_acquire)) {
+-      ASSERT(expected_val < _lock_treshold + 4);
+-      if (expected_val == locked) {
+-        expected_val = lockValue(moveState(!smaller_id));
+-      }
+-    }
+-    return {lockState(expected_val), e_lock.move_target};
+-  }
+-
+-  // ! Unlocks and sets the state to uncontended.
+-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+-  void unlock(EdgeLock& e_lock) {
+-    ASSERT(e_lock.state.load() == lockValue(EdgeLockState::LOCKED));
+-    e_lock.move_target = kInvalidPartition;
+-    e_lock.state.store(lockValue(EdgeLockState::UNCONTENDED), std::memory_order_release);
+-  }
+-
+-  // ! Unlocks, sets the state to moving and sets the partition id.
+-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+-  void unlockMoving(EdgeLock& e_lock, bool smaller_id, PartitionID target) {
+-    ASSERT(e_lock.state.load() == lockValue(EdgeLockState::LOCKED));
+-    e_lock.move_target = target;
+-    e_lock.state.store(lockValue(moveState(smaller_id)), std::memory_order_release);
+-  }
+-
+-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+-  static EdgeLockState moveState(bool smaller_id) {
+-    return smaller_id ? EdgeLockState::MOVING_SMALLER_ID_NODE : EdgeLockState::MOVING_LARGER_ID_NODE;
+-  }
+-
+-  // ! Indicate whether gain cache is initialized
++  // ! Indicate wheater gain cache is initialized
+   bool _is_gain_cache_initialized;
+ 
+-  size_t _top_level_num_nodes = 0;
+-
+   // ! Number of blocks
+   PartitionID _k = 0;
+ 
+@@ -1097,12 +1040,6 @@ private:
+ 
+   // ! For each edge we use an atomic lock to synchronize moves
+   Array< EdgeLock > _edge_locks;
+-
+-  // ! We need to synchronize uncontractions via atomic markers
+-  ThreadSafeFastResetFlagArray<uint8_t> _edge_markers;
+-
+-  // ! Fast reset threshold for edge locks
+-  uint32_t _lock_treshold;
+ };
+ 
+ } // namespace ds
+diff --git a/mt-kahypar/datastructures/partitioned_hypergraph.h b/mt-kahypar/datastructures/partitioned_hypergraph.h
+index 045757bf..193bd257 100644
+--- a/mt-kahypar/datastructures/partitioned_hypergraph.h
++++ b/mt-kahypar/datastructures/partitioned_hypergraph.h
+@@ -76,7 +76,6 @@ private:
+   explicit PartitionedHypergraph(const PartitionID k,
+                                  Hypergraph& hypergraph) :
+     _is_gain_cache_initialized(false),
+-    _top_level_num_nodes(hypergraph.initialNumNodes()),
+     _k(k),
+     _hg(&hypergraph),
+     _part_weights(k, CAtomic<HypernodeWeight>(0)),
+@@ -84,8 +83,10 @@ private:
+         "Refinement", "part_ids", hypergraph.initialNumNodes(), false, false),
+     _pins_in_part(hypergraph.initialNumEdges(), k, hypergraph.maxEdgeSize(), false),
+     _connectivity_set(hypergraph.initialNumEdges(), k, false),
+-    _move_to_penalty(),
+-    _move_from_benefit(),
++    _move_to_penalty(
++        "Refinement", "move_to_penalty", size_t(hypergraph.initialNumNodes()) * size_t(k + 1), true, false),
++    _move_from_benefit(
++        "Refinement", "move_from_benefit", hypergraph.initialNumNodes(), true, false),
+     _pin_count_update_ownership(
+         "Refinement", "pin_count_update_ownership", hypergraph.initialNumEdges(), true, false) {
+     _part_ids.assign(hypergraph.initialNumNodes(), kInvalidPartition, false);
+@@ -95,7 +96,6 @@ private:
+                                  Hypergraph& hypergraph,
+                                  parallel_tag_t) :
+     _is_gain_cache_initialized(false),
+-    _top_level_num_nodes(hypergraph.initialNumNodes()),
+     _k(k),
+     _hg(&hypergraph),
+     _part_weights(k, CAtomic<HypernodeWeight>(0)),
+@@ -113,6 +113,12 @@ private:
+       _pins_in_part.initialize(hypergraph.initialNumEdges(), k, hypergraph.maxEdgeSize());
+     }, [&] {
+       _connectivity_set = ConnectivitySets(hypergraph.initialNumEdges(), k);
++    }, [&] {
++      _move_to_penalty.resize(
++        "Refinement", "move_to_penalty", size_t(hypergraph.initialNumNodes()) * size_t(k + 1), true);
++    }, [&] {
++      _move_from_benefit.resize(
++        "Refinement", "move_from_benefit", hypergraph.initialNumNodes(), true);
+     }, [&] {
+       _pin_count_update_ownership.resize(
+         "Refinement", "pin_count_update_ownership", hypergraph.initialNumEdges(), true);
+@@ -448,7 +454,7 @@ private:
+    * Restores a previously removed set of singple-pin and parallel hyperedges. Note, that hes_to_restore
+    * must be exactly the same and given in the reverse order as returned by removeSinglePinAndParallelNets(...).
+    */
+-  void restoreSinglePinAndParallelNets(const parallel::scalable_vector<typename Hypergraph::ParallelHyperedge>& hes_to_restore) {
++  void restoreSinglePinAndParallelNets(const parallel::scalable_vector<ParallelHyperedge>& hes_to_restore) {
+     // Restore hyperedges in hypergraph
+     _hg->restoreSinglePinAndParallelNets(hes_to_restore);
+ 
+@@ -655,15 +661,6 @@ private:
+       _move_to_penalty[penalty_index(u, p)].load(std::memory_order_relaxed);
+   }
+ 
+-  void allocateGainTableIfNecessary() {
+-    if (_move_to_penalty.size() == 0) {
+-      _move_to_penalty.resize(
+-              "Refinement", "move_to_penalty", _top_level_num_nodes * size_t(_k + 1), true);
+-      _move_from_benefit.resize(
+-              "Refinement", "move_from_benefit", _top_level_num_nodes, true);
+-    }
+-  }
+-
+   void initializeGainCacheEntry(const HypernodeID u, vec<Gain>& penalty_aggregator) {
+     PartitionID pu = partID(u);
+     Gain benefit = 0, incident_edges_weight = 0;
+@@ -714,12 +711,11 @@ private:
+   // ! NOTE: Requires that pin counts are already initialized and reflect the
+   // ! current state of the partition
+   void initializeGainCache() {
+-    allocateGainTableIfNecessary();
+-
+     // check whether part has been initialized
+     ASSERT(std::none_of(nodes().begin(), nodes().end(),
+                             [&](HypernodeID u) { return partID(u) == kInvalidPartition || partID(u) > k(); }) );
+ 
++
+     auto aggregate_contribution_of_he_for_vertex =
+       [&](const PartitionID block_of_u,
+           const HyperedgeID he,
+@@ -737,8 +733,6 @@ private:
+       incident_edges_weight += edge_weight;
+     };
+ 
+-
+-
+     // Gain calculation consist of two stages
+     //  1. Compute gain of all low degree vertices sequential (with a parallel for over all vertices)
+     //  2. Compute gain of all high degree vertices parallel (with a sequential for over all high degree vertices)
+@@ -833,8 +827,14 @@ private:
+     }
+   }
+ 
+-  // ! Should be called e.g. after a rollback (see PartitionedGraph).
+-  void resetMoveState() {
++  // ! Should be called e.g. after a rollback (see PartitonedGraph).
++  // !
++  // ! More precisely, this needs to be called if (in this order):
++  // ! 1. Nodes are moved via changeNodePart(), involving a delta function
++  // ! 2. Nodes are reassigned (via setOnlyNodePart() or changeNodePart() without a delta function)
++  // ! 3. Nodes are moved again
++  // ! Then, resetMoveState() must be called between steps 2 and 3.
++  void resetMoveState(bool /*parallel*/) {
+     // Nothing to do here
+   }
+ 
+@@ -1188,8 +1188,6 @@ private:
+   // ! Indicate wheater gain cache is initialized
+   bool _is_gain_cache_initialized;
+ 
+-  size_t _top_level_num_nodes = 0;
+-
+   // ! Number of blocks
+   PartitionID _k = 0;
+ 
+diff --git a/mt-kahypar/datastructures/static_graph.cpp b/mt-kahypar/datastructures/static_graph.cpp
+index 80f335a2..14730184 100644
+--- a/mt-kahypar/datastructures/static_graph.cpp
++++ b/mt-kahypar/datastructures/static_graph.cpp
+@@ -425,7 +425,7 @@ namespace mt_kahypar::ds {
+ 
+ 
+   // ! Copy static hypergraph in parallel
+-  StaticGraph StaticGraph::copy(parallel_tag_t) const {
++  StaticGraph StaticGraph::copy(parallel_tag_t) {
+     StaticGraph hypergraph;
+ 
+     hypergraph._num_nodes = _num_nodes;
+@@ -452,7 +452,7 @@ namespace mt_kahypar::ds {
+   }
+ 
+   // ! Copy static hypergraph sequential
+-  StaticGraph StaticGraph::copy() const {
++  StaticGraph StaticGraph::copy() {
+     StaticGraph hypergraph;
+ 
+     hypergraph._num_nodes = _num_nodes;
+diff --git a/mt-kahypar/datastructures/static_graph.h b/mt-kahypar/datastructures/static_graph.h
+index 020f8b69..f12bdede 100644
+--- a/mt-kahypar/datastructures/static_graph.h
++++ b/mt-kahypar/datastructures/static_graph.h
+@@ -63,7 +63,6 @@ class StaticGraph {
+   using AtomicHypernodeID = parallel::IntegralAtomicWrapper<HypernodeID>;
+   using AtomicHypernodeWeight = parallel::IntegralAtomicWrapper<HypernodeWeight>;
+   using UncontractionFunction = std::function<void (const HypernodeID, const HypernodeID, const HyperedgeID)>;
+-  using MarkEdgeFunc = std::function<bool (const HyperedgeID)>;
+   #define NOOP_BATCH_FUNC [] (const HypernodeID, const HypernodeID, const HyperedgeID) { }
+ 
+   /**
+@@ -428,7 +427,7 @@ class StaticGraph {
+   static constexpr bool is_static_hypergraph = true;
+   static constexpr bool is_partitioned = false;
+   static constexpr size_t SIZE_OF_HYPERNODE = sizeof(Node);
+-  static constexpr size_t SIZE_OF_HYPEREDGE = sizeof(TmpEdgeInformation);
++  static constexpr size_t SIZE_OF_HYPEREDGE = sizeof(Edge);
+ 
+   // ! Iterator to iterate over the hypernodes
+   using HypernodeIterator = NodeIterator;
+@@ -439,9 +438,6 @@ class StaticGraph {
+   // ! Iterator to iterate over the incident nets of a hypernode
+   using IncidentNetsIterator = boost::range_detail::integer_iterator<HyperedgeID>;
+ 
+-  // ! static graph does not support explicit parallel edge detection
+-  struct ParallelHyperedge { };
+-
+   explicit StaticGraph() :
+     _num_nodes(0),
+     _num_removed_nodes(0),
+@@ -581,11 +577,9 @@ class StaticGraph {
+   // ! Returns a range to loop over the pins of hyperedge e.
+   IteratorRange<IncidenceIterator> pins(const HyperedgeID id) const {
+     const Edge& e = edge(id);
+-    const HypernodeID source = e.source();
+-    const HypernodeID target = e.target();
+     return IteratorRange<IncidenceIterator>(
+-      IncidenceIterator(source, target, 0),
+-      IncidenceIterator(source, target, 2));
++      IncidenceIterator(e.source(), e.target(), 0),
++      IncidenceIterator(e.source(), e.target(), 2));
+   }
+ 
+     // ####################### Node Information #######################
+@@ -630,15 +624,11 @@ class StaticGraph {
+     return edge(e).target();
+   }
+ 
+-  // ! Source of an edge
++  // ! Target of an edge
+   HypernodeID edgeSource(const HyperedgeID e) const {
+     return edge(e).source();
+   }
+ 
+-  bool isSinglePin(const HyperedgeID) const {
+-    return false;
+-  }
+-
+   // ! Weight of a hyperedge
+   HypernodeWeight edgeWeight(const HyperedgeID e) const {
+     return edge(e).weight();
+@@ -652,11 +642,6 @@ class StaticGraph {
+     return id;
+   }
+ 
+-  // ! Range of unique id edge ids
+-  HyperedgeID maxUniqueID() const {
+-    return initialNumEdges() / 2;
+-  }
+-
+   // ! Sets the weight of a hyperedge
+   void setEdgeWeight(const HyperedgeID e, const HyperedgeWeight weight) {
+     return edge(e).setWeight(weight);
+@@ -720,10 +705,8 @@ class StaticGraph {
+   }
+ 
+   void uncontract(const Batch&,
+-                  const MarkEdgeFunc& mark_edge,
+                   const UncontractionFunction& case_one_func = NOOP_BATCH_FUNC,
+                   const UncontractionFunction& case_two_func = NOOP_BATCH_FUNC) {
+-    unused(mark_edge);
+     unused(case_one_func);
+     unused(case_two_func);
+     ERROR("uncontract(batch) is not supported in static graph");
+@@ -780,10 +763,10 @@ class StaticGraph {
+   }
+ 
+   // ! Copy static hypergraph in parallel
+-  StaticGraph copy(parallel_tag_t) const;
++  StaticGraph copy(parallel_tag_t);
+ 
+   // ! Copy static hypergraph sequential
+-  StaticGraph copy() const;
++  StaticGraph copy();
+ 
+   // ! Reset internal data structure
+   void reset() { }
+diff --git a/mt-kahypar/datastructures/static_hypergraph.cpp b/mt-kahypar/datastructures/static_hypergraph.cpp
+index fc6e4116..daa8ec20 100644
+--- a/mt-kahypar/datastructures/static_hypergraph.cpp
++++ b/mt-kahypar/datastructures/static_hypergraph.cpp
+@@ -479,7 +479,7 @@ namespace mt_kahypar::ds {
+ 
+ 
+   // ! Copy static hypergraph in parallel
+-  StaticHypergraph StaticHypergraph::copy(parallel_tag_t) const {
++  StaticHypergraph StaticHypergraph::copy(parallel_tag_t) {
+     StaticHypergraph hypergraph;
+ 
+     hypergraph._num_hypernodes = _num_hypernodes;
+@@ -514,7 +514,7 @@ namespace mt_kahypar::ds {
+   }
+ 
+   // ! Copy static hypergraph sequential
+-  StaticHypergraph StaticHypergraph::copy() const {
++  StaticHypergraph StaticHypergraph::copy() {
+     StaticHypergraph hypergraph;
+ 
+     hypergraph._num_hypernodes = _num_hypernodes;
+diff --git a/mt-kahypar/datastructures/static_hypergraph.h b/mt-kahypar/datastructures/static_hypergraph.h
+index 56a272a5..fcae214d 100644
+--- a/mt-kahypar/datastructures/static_hypergraph.h
++++ b/mt-kahypar/datastructures/static_hypergraph.h
+@@ -388,11 +388,6 @@ class StaticHypergraph {
+   // ! Iterator to iterate over the incident nets of a hypernode
+   using IncidentNetsIterator = typename IncidentNets::const_iterator;
+ 
+-  struct ParallelHyperedge {
+-    HyperedgeID removed_hyperedge;
+-    HyperedgeID representative;
+-  };
+-
+   explicit StaticHypergraph() :
+     _num_hypernodes(0),
+     _num_removed_hypernodes(0),
+@@ -784,10 +779,10 @@ class StaticHypergraph {
+   }
+ 
+   // ! Copy static hypergraph in parallel
+-  StaticHypergraph copy(parallel_tag_t) const;
++  StaticHypergraph copy(parallel_tag_t);
+ 
+   // ! Copy static hypergraph sequential
+-  StaticHypergraph copy() const;
++  StaticHypergraph copy();
+ 
+   // ! Reset internal data structure
+   void reset() { }
+diff --git a/mt-kahypar/definitions.h b/mt-kahypar/definitions.h
+index 33ab6f29..03805320 100644
+--- a/mt-kahypar/definitions.h
++++ b/mt-kahypar/definitions.h
+@@ -25,8 +25,8 @@
+ 
+ #ifdef USE_GRAPH_PARTITIONER
+ #ifdef USE_STRONG_PARTITIONER
+-#include "mt-kahypar/datastructures/dynamic_graph.h"
+-#include "mt-kahypar/datastructures/dynamic_graph_factory.h"
++// not supported yet
++static_assert(false);
+ #else
+ #include "mt-kahypar/datastructures/static_graph.h"
+ #include "mt-kahypar/datastructures/static_graph_factory.h"
+@@ -52,8 +52,8 @@ using TBBInitializer = mt_kahypar::parallel::TBBInitializer<HardwareTopology, fa
+ 
+ #ifdef USE_GRAPH_PARTITIONER
+ #ifdef USE_STRONG_PARTITIONER
+-using Hypergraph = ds::DynamicGraph;
+-using HypergraphFactory = ds::DynamicGraphFactory;
++// not supported yet
++static_assert(false);
+ #else
+ using Hypergraph = ds::StaticGraph;
+ using HypergraphFactory = ds::StaticGraphFactory;
+@@ -77,7 +77,6 @@ using PartIdType = CAtomic<PartitionID>;
+ using PartIdType = PartitionID;
+ #endif
+ 
+-using ParallelHyperedge = Hypergraph::ParallelHyperedge;
+ 
+ using HighResClockTimepoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+ 
+diff --git a/mt-kahypar/io/hypergraph_io.cpp b/mt-kahypar/io/hypergraph_io.cpp
+index 2fa47deb..957426e9 100644
+--- a/mt-kahypar/io/hypergraph_io.cpp
++++ b/mt-kahypar/io/hypergraph_io.cpp
+@@ -80,26 +80,17 @@ namespace mt_kahypar::io {
+   }
+ 
+   MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+-  bool is_line_ending(char* mapped_file, size_t& pos) {
+-    return mapped_file[pos] == '\n' || mapped_file[pos] == '\0';
+-  }
+-
+-  MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+-  void do_line_ending(char* mapped_file, size_t& pos) {
+-    ASSERT(is_line_ending(mapped_file, pos));
+-    if (mapped_file[pos] != '\0') {
+-      ++pos;
+-    }
++  void line_ending(char* mapped_file, size_t& pos) {
++    unused(mapped_file);
++    ASSERT(mapped_file[pos] == '\n');
++    ++pos;
+   }
+ 
+   MT_KAHYPAR_ATTRIBUTE_ALWAYS_INLINE
+   int64_t read_number(char* mapped_file, size_t& pos, const size_t length) {
+     int64_t number = 0;
+-    while ( mapped_file[pos] == ' ' ) {
+-      ++pos;
+-    }
+     for ( ; pos < length; ++pos ) {
+-      if ( mapped_file[pos] == ' ' || is_line_ending(mapped_file, pos) ) {
++      if ( mapped_file[pos] == ' ' || mapped_file[pos] == '\n' ) {
+         while ( mapped_file[pos] == ' ' ) {
+           ++pos;
+         }
+@@ -127,7 +118,7 @@ namespace mt_kahypar::io {
+     if ( mapped_file[pos] != '\n' ) {
+       type = static_cast<mt_kahypar::Type>(read_number(mapped_file, pos, length));
+     }
+-    do_line_ending(mapped_file, pos);
++    line_ending(mapped_file, pos);
+   }
+ 
+   struct HyperedgeRange {
+@@ -162,8 +153,7 @@ namespace mt_kahypar::io {
+                              const HyperedgeID num_hyperedges,
+                              const mt_kahypar::Type type,
+                              HyperedgeVector& hyperedges,
+-                             parallel::scalable_vector<HyperedgeWeight>& hyperedges_weight,
+-                             const bool remove_single_pin_hes) {
++                             parallel::scalable_vector<HyperedgeWeight>& hyperedges_weight) {
+     HyperedgeID num_removed_single_pin_hyperedges = 0;
+     const bool has_hyperedge_weights = type == mt_kahypar::Type::EdgeWeights ||
+                                        type == mt_kahypar::Type::EdgeAndNodeWeights ?
+@@ -188,7 +178,7 @@ namespace mt_kahypar::io {
+         }
+ 
+         ASSERT(mapped_file[pos - 1] == '\n');
+-        if ( !remove_single_pin_hes || !isSinglePinHyperedge(mapped_file, pos, length, has_hyperedge_weights) ) {
++        if ( !isSinglePinHyperedge(mapped_file, pos, length, has_hyperedge_weights) ) {
+           ++current_range_num_hyperedges;
+         } else {
+           ++num_removed_single_pin_hyperedges;
+@@ -240,7 +230,7 @@ namespace mt_kahypar::io {
+           ASSERT(current_pos < current_end);
+         }
+ 
+-        if ( !remove_single_pin_hes || !isSinglePinHyperedge(mapped_file, current_pos, current_end, has_hyperedge_weights) ) {
++        if ( !isSinglePinHyperedge(mapped_file, current_pos, current_end, has_hyperedge_weights) ) {
+           ASSERT(current_id < hyperedges.size());
+           if ( has_hyperedge_weights ) {
+             hyperedges_weight[current_id] = read_number(mapped_file, current_pos, current_end);
+@@ -256,7 +246,7 @@ namespace mt_kahypar::io {
+             ASSERT(pin > 0, V(current_id));
+             hyperedge.push_back(pin - 1);
+           }
+-          do_line_ending(mapped_file, current_pos);
++          line_ending(mapped_file, current_pos);
+           ASSERT(hyperedge.size() >= 2);
+           ++current_id;
+         } else {
+@@ -282,7 +272,7 @@ namespace mt_kahypar::io {
+         ASSERT(pos > 0 && pos < length);
+         ASSERT(mapped_file[pos - 1] == '\n');
+         hypernodes_weight[hn] = read_number(mapped_file, pos, length);
+-        do_line_ending(mapped_file, pos);
++        line_ending(mapped_file, pos);
+       }
+     }
+   }
+@@ -294,8 +284,7 @@ namespace mt_kahypar::io {
+                           HyperedgeID& num_removed_single_pin_hyperedges,
+                           HyperedgeVector& hyperedges,
+                           parallel::scalable_vector<HyperedgeWeight>& hyperedges_weight,
+-                          parallel::scalable_vector<HypernodeWeight>& hypernodes_weight,
+-                          const bool remove_single_pin_hes) {
++                          parallel::scalable_vector<HypernodeWeight>& hypernodes_weight) {
+     ASSERT(!filename.empty(), "No filename for hypergraph file specified");
+     int fd = open_file(filename);
+     const size_t length = file_size(fd);
+@@ -308,8 +297,7 @@ namespace mt_kahypar::io {
+ 
+     // Read Hyperedges
+     num_removed_single_pin_hyperedges =
+-            readHyperedges(mapped_file, pos, length, num_hyperedges,
+-              type, hyperedges, hyperedges_weight, remove_single_pin_hes);
++            readHyperedges(mapped_file, pos, length, num_hyperedges, type, hyperedges, hyperedges_weight);
+     num_hyperedges -= num_removed_single_pin_hyperedges;
+ 
+     // Read Hypernode Weights
+@@ -321,8 +309,7 @@ namespace mt_kahypar::io {
+   }
+ 
+   Hypergraph readHypergraphFile(const std::string& filename,
+-                                const bool stable_construction_of_incident_edges,
+-                                const bool remove_single_pin_hes) {
++                                const bool stable_construction_of_incident_edges) {
+     // Read Hypergraph File
+     HyperedgeID num_hyperedges = 0;
+     HypernodeID num_hypernodes = 0;
+@@ -332,8 +319,7 @@ namespace mt_kahypar::io {
+     parallel::scalable_vector<HypernodeWeight> hypernodes_weight;
+     mt_kahypar::utils::Timer::instance().start_timer("read_input", "Read Hypergraph File");
+     readHypergraphFile(filename, num_hyperedges, num_hypernodes,
+-                       num_removed_single_pin_hyperedges, hyperedges,
+-                       hyperedges_weight, hypernodes_weight, remove_single_pin_hes);
++                       num_removed_single_pin_hyperedges, hyperedges, hyperedges_weight, hypernodes_weight);
+     mt_kahypar::utils::Timer::instance().stop_timer("read_input");
+ 
+     // Construct Hypergraph
+@@ -395,15 +381,16 @@ namespace mt_kahypar::io {
+     num_edges = read_number(mapped_file, pos, length);
+ 
+     if ( mapped_file[pos] != '\n' ) {
+-      // read the (up to) three 0/1 format digits
+-      uint32_t format_num = read_number(mapped_file, pos, length);
+-      ASSERT(format_num < 100, "Vertex sizes in input file are not supported.");
+-      ASSERT(format_num / 10 == 0 || format_num / 10 == 1);
+-      has_vertex_weights = (format_num / 10 == 1);
+-      ASSERT(format_num % 10 == 0 || format_num % 10 == 1);
+-      has_edge_weights = (format_num % 10 == 1);
++      // read the three 0/1 format digits
++      ASSERT(mapped_file[pos] == '0', "Vertex sizes in input file are not supported.");
++      pos++;
++      ASSERT(mapped_file[pos] == '0' || mapped_file[pos] == '1');
++      has_vertex_weights = (mapped_file[pos++] == '1');
++      ASSERT(mapped_file[pos] == '0' || mapped_file[pos] == '1');
++      // we use read_number for third digit to skip remaining spaces
++      has_edge_weights = (read_number(mapped_file, pos, length) == 1);
+     }
+-    do_line_ending(mapped_file, pos);
++    line_ending(mapped_file, pos);
+   }
+ 
+   struct VertexRange {
+@@ -465,7 +452,7 @@ namespace mt_kahypar::io {
+             read_number(mapped_file, pos, length);
+           }
+         }
+-        do_line_ending(mapped_file, pos);
++        line_ending(mapped_file, pos);
+         current_range_num_edges += vertex_degree;
+ 
+         // If there are enough vertices in the current scanned range
+@@ -500,18 +487,6 @@ namespace mt_kahypar::io {
+       }
+     });
+ 
+-    ASSERT([&]() {
+-        HyperedgeID last_end = 0;
+-        for(const auto& range: vertex_ranges) {
+-          if (last_end > range.start) {
+-            return false;
+-          }
+-          last_end = range.end;
+-        }
+-        return true;
+-      }()
+-    );
+-
+     // Process all ranges in parallel, build edge vector and assign weights
+     tbb::parallel_for(0UL, vertex_ranges.size(), [&](const size_t i) {
+       const VertexRange& range = vertex_ranges[i];
+@@ -534,7 +509,7 @@ namespace mt_kahypar::io {
+           vertices_weight[current_vertex_id] = read_number(mapped_file, current_pos, current_end);
+         }
+ 
+-        while ( !is_line_ending(mapped_file, current_pos) ) {
++        while ( mapped_file[current_pos] != '\n' ) {
+           const HypernodeID target = read_number(mapped_file, current_pos, current_end);
+           ASSERT(target > 0 && (target - 1) < num_vertices, V(target));
+ 
+@@ -554,7 +529,7 @@ namespace mt_kahypar::io {
+             read_number(mapped_file, current_pos, current_end);
+           }
+         }
+-        do_line_ending(mapped_file, current_pos);
++        line_ending(mapped_file, current_pos);
+         ++current_vertex_id;
+       }
+     });
+@@ -618,10 +593,9 @@ namespace mt_kahypar::io {
+ 
+   Hypergraph readInputFile(const std::string& filename,
+                            const FileFormat format,
+-                           const bool stable_construction_of_incident_edges,
+-                           const bool remove_single_pin_hes) {
++                           const bool stable_construction_of_incident_edges) {
+     switch (format) {
+-      case FileFormat::hMetis: return readHypergraphFile(filename, stable_construction_of_incident_edges, remove_single_pin_hes);
++      case FileFormat::hMetis: return readHypergraphFile(filename, stable_construction_of_incident_edges);
+       case FileFormat::Metis: return readMetisFile(filename, stable_construction_of_incident_edges);
+         // omit default case to trigger compiler warning for missing cases
+     }
+diff --git a/mt-kahypar/io/hypergraph_io.h b/mt-kahypar/io/hypergraph_io.h
+index c7192d1e..65f03172 100644
+--- a/mt-kahypar/io/hypergraph_io.h
++++ b/mt-kahypar/io/hypergraph_io.h
+@@ -43,12 +43,10 @@ namespace io {
+                           HyperedgeID& num_removed_single_pin_hyperedges,
+                           HyperedgeVector& hyperedges,
+                           parallel::scalable_vector<HyperedgeWeight>& hyperedges_weight,
+-                          parallel::scalable_vector<HypernodeWeight>& hypernodes_weight,
+-                           const bool remove_single_pin_hes = true);
++                          parallel::scalable_vector<HypernodeWeight>& hypernodes_weight);
+ 
+   Hypergraph readHypergraphFile(const std::string& filename,
+-                                const bool stable_construction_of_incident_edges = false,
+-                                const bool remove_single_pin_hes = true);
++                                const bool stable_construction_of_incident_edges = false);
+ 
+   void readMetisFile(const std::string& filename,
+                      HyperedgeID& num_hyperedges,
+@@ -62,8 +60,7 @@ namespace io {
+ 
+   Hypergraph readInputFile(const std::string& filename,
+                            const FileFormat format,
+-                           const bool stable_construction_of_incident_edges = false,
+-                           const bool remove_single_pin_hes = true);
++                           const bool stable_construction_of_incident_edges = false);
+ 
+   void readPartitionFile(const std::string& filename, std::vector<PartitionID>& partition);
+   void writePartitionFile(const PartitionedHypergraph& phg, const std::string& filename);
+diff --git a/mt-kahypar/io/partitioning_output.cpp b/mt-kahypar/io/partitioning_output.cpp
+index 1fb6eb8c..200ffb04 100644
+--- a/mt-kahypar/io/partitioning_output.cpp
++++ b/mt-kahypar/io/partitioning_output.cpp
+@@ -358,8 +358,7 @@ namespace mt_kahypar::io {
+     for ( PartitionID block_1 = 0; block_1 < k; ++block_1 ) {
+       std::cout << std::right << std::setw(column_width) << block_1;
+       for ( PartitionID block_2 = 0; block_2 < k; ++block_2 ) {
+-        std::cout << std::right << std::setw(column_width)
+-                  << (Hypergraph::is_graph ? cut_matrix[block_1][block_2].load() / 2 : cut_matrix[block_1][block_2].load());
++        std::cout << std::right << std::setw(column_width) << cut_matrix[block_1][block_2].load();
+       }
+       std::cout << std::endl;
+     }
+@@ -431,6 +430,7 @@ namespace mt_kahypar::io {
+   }
+ 
+   void printConnectedCutHyperedgeAnalysis(const PartitionedHypergraph& hypergraph) {
++    // TODO(maas): is this correct for graphs?
+     std::vector<bool> visited_he(hypergraph.initialNumEdges(), false);
+     std::vector<HyperedgeWeight> connected_cut_hyperedges;
+ 
+@@ -438,7 +438,7 @@ namespace mt_kahypar::io {
+       HyperedgeWeight component_weight = 0;
+       std::vector<HyperedgeID> s;
+       s.push_back(he);
+-      visited_he[hypergraph.uniqueEdgeID(he)] = true;
++      visited_he[he] = true;
+ 
+       while ( !s.empty() ) {
+         const HyperedgeID e = s.back();
+@@ -447,9 +447,9 @@ namespace mt_kahypar::io {
+ 
+         for ( const HypernodeID& pin : hypergraph.pins(e) ) {
+           for ( const HyperedgeID& tmp_e : hypergraph.incidentEdges(pin) ) {
+-            if ( !visited_he[hypergraph.uniqueEdgeID(tmp_e)] && hypergraph.connectivity(tmp_e) > 1 ) {
++            if ( !visited_he[tmp_e] && hypergraph.connectivity(tmp_e) > 1 ) {
+               s.push_back(tmp_e);
+-              visited_he[hypergraph.uniqueEdgeID(tmp_e)] = true;
++              visited_he[tmp_e] = true;
+             }
+           }
+         }
+@@ -459,7 +459,7 @@ namespace mt_kahypar::io {
+     };
+ 
+     for ( const HyperedgeID& he : hypergraph.edges() ) {
+-      if ( hypergraph.connectivity(he) > 1 && !visited_he[hypergraph.uniqueEdgeID(he)] ) {
++      if ( hypergraph.connectivity(he) > 1 && !visited_he[he] ) {
+         connected_cut_hyperedges.push_back(analyse_component(he));
+       }
+     }
+diff --git a/mt-kahypar/io/sql_plottools_serializer.cpp b/mt-kahypar/io/sql_plottools_serializer.cpp
+index e3d4d894..d395f155 100644
+--- a/mt-kahypar/io/sql_plottools_serializer.cpp
++++ b/mt-kahypar/io/sql_plottools_serializer.cpp
+@@ -41,7 +41,7 @@ std::string serialize(const PartitionedHypergraph& hypergraph,
+         << " graph=" << context.partition.graph_filename.substr(
+             context.partition.graph_filename.find_last_of('/') + 1)
+         << " numHNs=" << hypergraph.initialNumNodes()
+-        << " numHEs=" << (Hypergraph::is_graph ? hypergraph.initialNumEdges() / 2 : hypergraph.initialNumEdges())
++        << " numHEs=" << hypergraph.initialNumEdges()
+         << " paradigm=" << context.partition.paradigm
+         << " mode=" << context.partition.mode
+         << " objective=" << context.partition.objective
+diff --git a/mt-kahypar/partition/coarsening/coarsening_commons.h b/mt-kahypar/partition/coarsening/coarsening_commons.h
+index 9c16acd2..89748b90 100644
+--- a/mt-kahypar/partition/coarsening/coarsening_commons.h
++++ b/mt-kahypar/partition/coarsening/coarsening_commons.h
+@@ -112,23 +112,20 @@ public:
+       utils::Timer::instance().stop_timer("compactify_hypergraph");
+     } else {
+       utils::Timer::instance().start_timer("finalize_multilevel_hierarchy", "Finalize Multilevel Hierarchy");
+-      // Free memory of temporary contraction buffer and
+-      // release coarsening memory in memory pool
++      // Construct partitioned hypergraph for initial partitioning
++      *partitioned_hg = PartitionedHypergraph(
++        _context.partition.k, _hg, parallel_tag_t());
+       if (!hierarchy.empty()) {
+-        hierarchy.back().contractedHypergraph().freeTmpContractionBuffer();
+-      } else {
+-        _hg.freeTmpContractionBuffer();
++        partitioned_hg->setHypergraph(hierarchy.back().contractedHypergraph());
+       }
++
++      // Free memory of temporary contraction buffer and
++      // release coarsening memory in memory pool
++      partitioned_hg->hypergraph().freeTmpContractionBuffer();
+       if (_context.type == kahypar::ContextType::main) {
+         parallel::MemoryPool::instance().release_mem_group("Coarsening");
+       }
+ 
+-      // Construct partitioned hypergraph for initial partitioning
+-      *partitioned_hg = PartitionedHypergraph(_context.partition.k, _hg, parallel_tag_t());
+-      if (!hierarchy.empty()) {
+-        partitioned_hg->setHypergraph(hierarchy.back().contractedHypergraph());
+-      }
+-
+       utils::Timer::instance().stop_timer("finalize_multilevel_hierarchy");
+     }
+     is_finalized = true;
+diff --git a/mt-kahypar/partition/coarsening/nlevel_uncoarsener.cpp b/mt-kahypar/partition/coarsening/nlevel_uncoarsener.cpp
+index 6e3c3cfe..46c1805d 100644
+--- a/mt-kahypar/partition/coarsening/nlevel_uncoarsener.cpp
++++ b/mt-kahypar/partition/coarsening/nlevel_uncoarsener.cpp
+@@ -50,15 +50,10 @@ namespace mt_kahypar {
+     });
+     _uncoarseningData.partitioned_hg->initializePartition();
+ 
+-    if ( _context.refinement.fm.algorithm == FMAlgorithm::fm_gain_cache
+-        || _context.refinement.fm.algorithm == FMAlgorithm::fm_gain_cache_on_demand ) {
+-      _uncoarseningData.partitioned_hg->allocateGainTableIfNecessary();
+-      if ( _context.refinement.fm.algorithm == FMAlgorithm::fm_gain_cache ) {
+-        _uncoarseningData.partitioned_hg->initializeGainCache();
+-      }
++    if ( _context.refinement.fm.algorithm == FMAlgorithm::fm_gain_cache ) {
++      _uncoarseningData.partitioned_hg->initializeGainCache();
+     }
+ 
+-
+     ASSERT(metrics::objective(*_uncoarseningData.compactified_phg, _context.partition.objective) ==
+            metrics::objective(*_uncoarseningData.partitioned_hg, _context.partition.objective),
+            V(metrics::objective(*_uncoarseningData.compactified_phg, _context.partition.objective)) <<
+diff --git a/mt-kahypar/partition/coarsening/uncoarsener_base.h b/mt-kahypar/partition/coarsening/uncoarsener_base.h
+index f9f5a880..5369040b 100644
+--- a/mt-kahypar/partition/coarsening/uncoarsener_base.h
++++ b/mt-kahypar/partition/coarsening/uncoarsener_base.h
+@@ -78,7 +78,7 @@ class UncoarsenerBase {
+     m.imbalance = metrics::imbalance(phg, _context);
+ 
+     int64_t num_nodes = phg.initialNumNodes();
+-    int64_t num_edges = Hypergraph::is_graph ? phg.initialNumEdges() / 2 : phg.initialNumEdges();
++    int64_t num_edges = phg.initialNumEdges();
+     utils::Stats::instance().add_stat("initial_num_nodes", num_nodes);
+     utils::Stats::instance().add_stat("initial_num_edges", num_edges);
+     utils::Stats::instance().add_stat("initial_cut", m.cut);
+diff --git a/mt-kahypar/partition/initial_partitioning/flat/initial_partitioning_data_container.h b/mt-kahypar/partition/initial_partitioning/flat/initial_partitioning_data_container.h
+index 1e005bcd..d9a5122e 100644
+--- a/mt-kahypar/partition/initial_partitioning/flat/initial_partitioning_data_container.h
++++ b/mt-kahypar/partition/initial_partitioning/flat/initial_partitioning_data_container.h
+@@ -358,6 +358,7 @@ class InitialPartitioningDataContainer {
+     _local_kway_pq(_context.partition.k),
+     _is_local_pq_initialized(false),
+     _local_hn_visited(_context.partition.k * hypergraph.initialNumNodes()),
++    // TODO(maas): might be a problem?
+     _local_he_visited(_context.partition.k * hypergraph.initialNumEdges()),
+     _local_unassigned_hypernodes(),
+     _local_unassigned_hypernode_pointer(std::numeric_limits<size_t>::max()),
+@@ -637,7 +638,6 @@ class InitialPartitioningDataContainer {
+       best_feasible_objective = best->_result._objective;
+     }
+ 
+-    _partitioned_hg.resetMoveState();
+     _partitioned_hg.initializePartition();
+     ASSERT(best_feasible_objective == metrics::objective(_partitioned_hg, _context.partition.objective, false),
+            V(best_feasible_objective) << V(metrics::objective(_partitioned_hg, _context.partition.objective, false)));
+diff --git a/mt-kahypar/partition/initial_partitioning/flat/label_propagation_initial_partitioner.cpp b/mt-kahypar/partition/initial_partitioning/flat/label_propagation_initial_partitioner.cpp
+index cf9196be..749cd6f1 100644
+--- a/mt-kahypar/partition/initial_partitioning/flat/label_propagation_initial_partitioner.cpp
++++ b/mt-kahypar/partition/initial_partitioning/flat/label_propagation_initial_partitioner.cpp
+@@ -81,11 +81,9 @@ tbb::task* LabelPropagationInitialPartitioner::execute() {
+                 return true;
+               }(), "Gain calculation failed");
+ 
+-              converged = false;
+               hg.setNodePart(hn, to);
+             } else if ( from != to ) {
+               ASSERT(fitsIntoBlock(hg, hn, to));
+-              converged = false;
+ 
+               #ifndef KAHYPAR_ENABLE_HEAVY_INITIAL_PARTITIONING_ASSERTIONS
+               hg.changeNodePart(hn, from, to);
+diff --git a/mt-kahypar/partition/metrics.cpp b/mt-kahypar/partition/metrics.cpp
+index 7f2f557e..f6585a37 100644
+--- a/mt-kahypar/partition/metrics.cpp
++++ b/mt-kahypar/partition/metrics.cpp
+@@ -29,8 +29,8 @@ namespace mt_kahypar::metrics {
+   HyperedgeWeight hyperedgeCut(const PartitionedHypergraph& hypergraph, const bool parallel) {
+     if ( parallel ) {
+       tbb::enumerable_thread_specific<HyperedgeWeight> cut(0);
+-      hypergraph.doParallelForAllEdges([&](const HyperedgeID he) {
+-        if (hypergraph.connectivity(he) > 1) {
++      tbb::parallel_for(ID(0), hypergraph.initialNumEdges(), [&](const HyperedgeID he) {
++        if (hypergraph.edgeIsEnabled(he) && hypergraph.connectivity(he) > 1) {
+           cut.local() += hypergraph.edgeWeight(he);
+         }
+       });
+@@ -49,8 +49,10 @@ namespace mt_kahypar::metrics {
+   HyperedgeWeight km1(const PartitionedHypergraph& hypergraph, const bool parallel) {
+     if ( parallel ) {
+       tbb::enumerable_thread_specific<HyperedgeWeight> km1(0);
+-      hypergraph.doParallelForAllEdges([&](const HyperedgeID he) {
+-        km1.local() += std::max(hypergraph.connectivity(he) - 1, 0) * hypergraph.edgeWeight(he);
++      tbb::parallel_for(ID(0), hypergraph.initialNumEdges(), [&](const HyperedgeID he) {
++        if (hypergraph.edgeIsEnabled(he)) {
++          km1.local() += std::max(hypergraph.connectivity(he) - 1, 0) * hypergraph.edgeWeight(he);
++        }
+       });
+       return km1.combine(std::plus<>()) / (Hypergraph::is_graph ? 2 : 1);
+     } else {
+@@ -65,10 +67,12 @@ namespace mt_kahypar::metrics {
+   HyperedgeWeight soed(const PartitionedHypergraph& hypergraph, const bool parallel) {
+     if ( parallel ) {
+       tbb::enumerable_thread_specific<HyperedgeWeight> soed(0);
+-      hypergraph.doParallelForAllEdges([&](const HyperedgeID he) {
+-        PartitionID connectivity = hypergraph.connectivity(he);
+-        if (connectivity > 1) {
+-          soed.local() += connectivity * hypergraph.edgeWeight(he);
++      tbb::parallel_for(ID(0), hypergraph.initialNumEdges(), [&](const HyperedgeID he) {
++        if ( hypergraph.edgeIsEnabled(he) ) {
++          PartitionID connectivity = hypergraph.connectivity(he);
++          if (connectivity > 1) {
++            soed.local() += connectivity * hypergraph.edgeWeight(he);
++          }
+         }
+       });
+       return soed.combine(std::plus<>()) / (Hypergraph::is_graph ? 2 : 1);
+@@ -123,4 +127,23 @@ namespace mt_kahypar::metrics {
+     return max_balance - 1.0;
+   }
+ 
++  double motifConductance(const PartitionedHypergraph& hypergraph, const Context& context, std::vector<int> &hypernode_degrees){
++    HyperedgeWeight cut;
++    cut = hyperedgeCut(hypergraph);
++    std::vector<HyperedgeID> volumes(context.partition.k, 0);
++    for (HypernodeID u : hypergraph.nodes()) {
++      volumes[hypergraph.partID(u)] += hypernode_degrees[u];
++    }
++
++    HypernodeID lastNode = hypernode_degrees.size()-1;
++    int oppositeBlock = hypergraph.partID(lastNode); //partID corresponding to contracted node
++    int clusterBlock = 1 - oppositeBlock; //partID corresponding to detected cluster
++
++    HyperedgeID min_volume;
++    
++    min_volume = volumes[clusterBlock];
++
++    return ((1.0*(cut))/(1.0*min_volume));
++  }
++
+ } // namespace mt_kahypar::metrics
+\ No newline at end of file
+diff --git a/mt-kahypar/partition/metrics.h b/mt-kahypar/partition/metrics.h
+index 8fac036f..9ad85584 100644
+--- a/mt-kahypar/partition/metrics.h
++++ b/mt-kahypar/partition/metrics.h
+@@ -67,5 +67,7 @@ HyperedgeWeight objective(
+ 
+ double imbalance(const PartitionedHypergraph& hypergraph, const Context& context);
+ 
++double motifConductance(const PartitionedHypergraph& hypergraph, const Context& context, std::vector<int> &hypernode_degrees);
++
+ }  // namespace metrics
+ }  // namespace mt_kahypar
+diff --git a/mt-kahypar/partition/partitioner.cpp b/mt-kahypar/partition/partitioner.cpp
+index 5d5811cd..a78b9ef0 100644
+--- a/mt-kahypar/partition/partitioner.cpp
++++ b/mt-kahypar/partition/partitioner.cpp
+@@ -62,7 +62,7 @@ namespace mt_kahypar {
+   }
+ 
+   void configurePreprocessing(const Hypergraph& hypergraph, Context& context) {
+-    const double density = static_cast<double>(Hypergraph::is_graph ? hypergraph.initialNumEdges() / 2 : hypergraph.initialNumEdges()) /
++    const double density = static_cast<double>(hypergraph.initialNumEdges()) /
+                            static_cast<double>(hypergraph.initialNumNodes());
+     if (context.preprocessing.community_detection.edge_weight_function == LouvainEdgeWeight::hybrid) {
+       if (density < 0.75) {
+@@ -105,28 +105,7 @@ namespace mt_kahypar {
+     }
+   }
+ 
+-  bool isGraph(const Hypergraph& hypergraph) {
+-    if (Hypergraph::is_graph) {
+-      return true;
+-    }
+-    return tbb::parallel_reduce(tbb::blocked_range<HyperedgeID>(
+-            ID(0), hypergraph.initialNumEdges()), true, [&](const tbb::blocked_range<HyperedgeID>& range, bool isGraph) {
+-      if ( isGraph ) {
+-        bool tmp_is_graph = isGraph;
+-        for (HyperedgeID he = range.begin(); he < range.end(); ++he) {
+-          if ( hypergraph.edgeIsEnabled(he) ) {
+-            tmp_is_graph &= (hypergraph.edgeSize(he) == 2);
+-          }
+-        }
+-        return tmp_is_graph;
+-      }
+-      return false;
+-    }, [&](const bool lhs, const bool rhs) {
+-      return lhs && rhs;
+-    });
+-  }
+-
+-  bool isMeshGraph(const Hypergraph& graph) {
++  bool is_mesh_graph(const Hypergraph& graph) {
+     const HypernodeID num_nodes = graph.initialNumNodes();
+     const double avg_hn_degree = utils::avgHypernodeDegree(graph);
+     std::vector<HyperedgeID> hn_degrees;
+@@ -151,23 +130,21 @@ namespace mt_kahypar {
+ 
+   void preprocess(Hypergraph& hypergraph, Context& context) {
+     bool use_community_detection = context.preprocessing.use_community_detection;
+-    bool is_graph = false;
+ 
+-    if ( context.preprocessing.use_community_detection ) {
+-      utils::Timer::instance().start_timer("detect_graph_structure", "Detect Graph Structure");
+-      is_graph = isGraph(hypergraph);
+-      if ( is_graph && context.preprocessing.disable_community_detection_for_mesh_graphs ) {
+-        use_community_detection = !isMeshGraph(hypergraph);
+-      }
+-      utils::Timer::instance().stop_timer("detect_graph_structure");
++    #ifdef USE_GRAPH_PARTITIONER
++    if (use_community_detection && context.preprocessing.disable_community_detection_for_mesh_graphs) {
++      utils::Timer::instance().start_timer("detect_mesh_graph", "Detect Mesh Graph");
++      use_community_detection = !is_mesh_graph(hypergraph);
++      utils::Timer::instance().stop_timer("detect_mesh_graph");
+     }
++    #endif
+ 
+     if ( use_community_detection ) {
+       io::printTopLevelPreprocessingBanner(context);
+ 
+       utils::Timer::instance().start_timer("community_detection", "Community Detection");
+       utils::Timer::instance().start_timer("construct_graph", "Construct Graph");
+-      Graph graph(hypergraph, context.preprocessing.community_detection.edge_weight_function, is_graph);
++      Graph graph(hypergraph, context.preprocessing.community_detection.edge_weight_function);
+       if ( !context.preprocessing.community_detection.low_memory_contraction ) {
+         graph.allocateContractionBuffers();
+       }
+diff --git a/mt-kahypar/partition/preprocessing/sparsification/degree_zero_hn_remover.h b/mt-kahypar/partition/preprocessing/sparsification/degree_zero_hn_remover.h
+index 42d1926b..34141619 100644
+--- a/mt-kahypar/partition/preprocessing/sparsification/degree_zero_hn_remover.h
++++ b/mt-kahypar/partition/preprocessing/sparsification/degree_zero_hn_remover.h
+@@ -68,14 +68,11 @@ class DegreeZeroHypernodeRemover {
+                 || (hypergraph.nodeWeight(lhs) == hypergraph.nodeWeight(rhs) && lhs > rhs);
+       });
+     // Sort blocks of partition in increasing order of their weight
+-    auto distance_to_max = [&](const PartitionID block) {
+-      return hypergraph.partWeight(block) - _context.partition.max_part_weights[block];
+-    };
+     parallel::scalable_vector<PartitionID> blocks(_context.partition.k, 0);
+     std::iota(blocks.begin(), blocks.end(), 0);
+     std::sort(blocks.begin(), blocks.end(),
+       [&](const PartitionID& lhs, const PartitionID& rhs) {
+-        return distance_to_max(lhs) < distance_to_max(rhs);
++        return hypergraph.partWeight(lhs) < hypergraph.partWeight(rhs);
+       });
+ 
+     // Perform Bin-Packing
+@@ -84,7 +81,7 @@ class DegreeZeroHypernodeRemover {
+       hypergraph.restoreDegreeZeroHypernode(hn, to);
+       PartitionID i = 0;
+       while ( i + 1 < _context.partition.k &&
+-              distance_to_max(blocks[i]) > distance_to_max(blocks[i + 1]) ) {
++              hypergraph.partWeight(blocks[i]) > hypergraph.partWeight(blocks[i + 1]) ) {
+         std::swap(blocks[i], blocks[i + 1]);
+         ++i;
+       }
+diff --git a/mt-kahypar/partition/refinement/deterministic/deterministic_label_propagation.cpp b/mt-kahypar/partition/refinement/deterministic/deterministic_label_propagation.cpp
+index 3d189681..88e057eb 100644
+--- a/mt-kahypar/partition/refinement/deterministic/deterministic_label_propagation.cpp
++++ b/mt-kahypar/partition/refinement/deterministic/deterministic_label_propagation.cpp
+@@ -33,7 +33,6 @@ namespace mt_kahypar {
+                                                         const vec<HypernodeID>&,
+                                                         Metrics& best_metrics,
+                                                         const double) {
+-    phg.resetMoveState();
+     Gain overall_improvement = 0;
+     constexpr size_t num_buckets = utils::ParallelPermutation<HypernodeID>::num_buckets;
+     const size_t num_sub_rounds = context.refinement.deterministic_refinement.num_sub_rounds_sync_lp;
+diff --git a/mt-kahypar/partition/refinement/flows/problem_construction.cpp b/mt-kahypar/partition/refinement/flows/problem_construction.cpp
+index 6939db1a..8e813df8 100644
+--- a/mt-kahypar/partition/refinement/flows/problem_construction.cpp
++++ b/mt-kahypar/partition/refinement/flows/problem_construction.cpp
+@@ -136,9 +136,9 @@ Subhypergraph ProblemConstruction::construct(const SearchID search_id,
+       for ( const HyperedgeID& he : phg.incidentEdges(hn) ) {
+         bfs.add_pins_of_hyperedge_to_queue(he, phg, max_bfs_distance,
+           max_weight_block_0, max_weight_block_1);
+-        if ( !bfs.contained_hes[phg.uniqueEdgeID(he)] ) {
++        if ( !bfs.contained_hes[he] ) {
+           sub_hg.hes.push_back(he);
+-          bfs.contained_hes[phg.uniqueEdgeID(he)] = true;
++          bfs.contained_hes[he] = true;
+         }
+       }
+     }
+@@ -154,33 +154,30 @@ Subhypergraph ProblemConstruction::construct(const SearchID search_id,
+   ASSERT([&]() {
+     assert_map expected_hes;
+     for ( const HyperedgeID& he : sub_hg.hes ) {
+-      const HyperedgeID id = phg.uniqueEdgeID(he);
+-      if ( expected_hes.count(id) > 0 ) {
++      if ( expected_hes.count(he) > 0 ) {
+         LOG << "Hyperedge" << he << "is contained multiple times in subhypergraph!";
+         return false;
+       }
+-      expected_hes[id] = true;
++      expected_hes[he] = true;
+     }
+ 
+     for ( const HypernodeID& hn : sub_hg.nodes_of_block_0 ) {
+       for ( const HyperedgeID& he : phg.incidentEdges(hn) ) {
+-        const HyperedgeID id = phg.uniqueEdgeID(he);
+-        if ( expected_hes.count(id) == 0 ) {
++        if ( expected_hes.count(he) == 0 ) {
+           LOG << "Hyperedge" << he << "not contained in subhypergraph!";
+           return false;
+         }
+-        expected_hes[id] = false;
++        expected_hes[he] = false;
+       }
+     }
+ 
+     for ( const HypernodeID& hn : sub_hg.nodes_of_block_1 ) {
+       for ( const HyperedgeID& he : phg.incidentEdges(hn) ) {
+-        const HyperedgeID id = phg.uniqueEdgeID(he);
+-        if ( expected_hes.count(id) == 0 ) {
++        if ( expected_hes.count(he) == 0 ) {
+           LOG << "Hyperedge" << he << "not contained in subhypergraph!";
+           return false;
+         }
+-        expected_hes[id] = false;
++        expected_hes[he] = false;
+       }
+     }
+ 
+diff --git a/mt-kahypar/partition/refinement/flows/scheduler.cpp b/mt-kahypar/partition/refinement/flows/scheduler.cpp
+index defd7255..524454a9 100644
+--- a/mt-kahypar/partition/refinement/flows/scheduler.cpp
++++ b/mt-kahypar/partition/refinement/flows/scheduler.cpp
+@@ -104,7 +104,7 @@ bool FlowRefinementScheduler::refineImpl(
+                 const parallel::scalable_vector<HypernodeID>&,
+                 Metrics& best_metrics,
+                 const double)  {
+-  phg.resetMoveState();
++  unused(phg);
+   ASSERT(_phg == &phg);
+   _quotient_graph.setObjective(best_metrics.getMetric(
+     Mode::direct, _context.partition.objective));
+diff --git a/mt-kahypar/partition/refinement/fm/global_rollback.cpp b/mt-kahypar/partition/refinement/fm/global_rollback.cpp
+index 76bebb80..a1501a91 100644
+--- a/mt-kahypar/partition/refinement/fm/global_rollback.cpp
++++ b/mt-kahypar/partition/refinement/fm/global_rollback.cpp
+@@ -190,12 +190,10 @@ namespace mt_kahypar {
+       }
+     });
+ 
+-    if (update_gain_cache) {
+-      // recompute moveFromBenefit values since they are potentially invalid
+-      tbb::parallel_for(MoveID(0), numMoves, [&](const MoveID i) {
+-        phg.recomputeMoveFromBenefit(move_order[i].node);
+-      });
+-    }
++    // recompute moveFromBenefit values since they are potentially invalid
++    tbb::parallel_for(MoveID(0), numMoves, [&](MoveID localMoveID) {
++      phg.recomputeMoveFromBenefit(move_order[localMoveID].node);
++    });
+ 
+     sharedData.moveTracker.reset();
+ 
+@@ -284,6 +282,7 @@ namespace mt_kahypar {
+         last_recalc_round.assign(phg.initialNumEdges(), CAtomic<uint32_t>(0));
+       }
+     } else{
++      // TODO(maas): might be a problem?
+       tbb::parallel_for(0U, phg.initialNumEdges(), recalculate_and_distribute_for_hyperedge);
+     }
+   }
+@@ -362,7 +361,7 @@ namespace mt_kahypar {
+       }
+     });
+ 
+-    if (update_gain_cache) {
++    if constexpr (update_gain_cache) {
+       tbb::parallel_for(0U, numMoves, [&](const MoveID i) {
+         phg.recomputeMoveFromBenefit(move_order[i].node);
+       });
+@@ -447,4 +446,4 @@ namespace mt_kahypar {
+   template bool GlobalRollback::verifyGains<true>
+           (PartitionedHypergraph& , FMSharedData& );
+ 
+-}
++}
+\ No newline at end of file
+diff --git a/mt-kahypar/partition/refinement/fm/localized_kway_fm_core.cpp b/mt-kahypar/partition/refinement/fm/localized_kway_fm_core.cpp
+index 1e43a77f..ce4346d1 100644
+--- a/mt-kahypar/partition/refinement/fm/localized_kway_fm_core.cpp
++++ b/mt-kahypar/partition/refinement/fm/localized_kway_fm_core.cpp
+@@ -94,6 +94,7 @@ namespace mt_kahypar {
+         }
+       }
+     }
++    edgesWithGainChanges.clear();
+ 
+     if (++deduplicationTime == 0) {
+       neighborDeduplicator.assign(neighborDeduplicator.size(), 0);
+@@ -133,6 +134,7 @@ namespace mt_kahypar {
+     // we would have to add the success func to the interface of DeltaPhg (and then ignore it there...)
+     // and do the local rollback outside this function
+ 
++
+     size_t bestImprovementIndex = 0;
+     Gain estimatedImprovement = 0;
+     Gain bestImprovement = 0;
+@@ -148,47 +150,25 @@ namespace mt_kahypar {
+       } else {
+         if (!fm_strategy.findNextMove(phg, move)) break;
+       }
+-      sharedData.nodeTracker.deactivateNode(move.node, thisSearch);
+-
+-      // skip if no target block available
+-      if (move.to == kInvalidPartition) {
+-        continue;
+-      }
+ 
+-      bool expect_improvement = estimatedImprovement + move.gain > bestImprovement;
+-      bool high_deg = phg.nodeDegree(move.node) >= PartitionedHypergraph::HIGH_DEGREE_THRESHOLD;
+-
+-      // skip if high degree (unless it nets actual improvement; but don't apply on deltaPhg then)
+-      if (!expect_improvement && high_deg) {
+-        continue;
+-      }
+-      // less restrictive option: skip if negative gain (or < -5000 or smth).
+-      // downside: have to flush before improvement or run it through deltaPhg
+-      // probably quite similar since this only really matters in the first few moves where the stop rule
+-      // doesn't signal us to stop yet
+-
+-      edgesWithGainChanges.clear(); // clear before move. delta_func feeds nets of moved vertex.
++      sharedData.nodeTracker.deactivateNode(move.node, thisSearch);
+       MoveID move_id = std::numeric_limits<MoveID>::max();
+       bool moved = false;
+-      if constexpr (use_delta) {
+-        heaviestPartWeight = heaviestPartAndWeight(deltaPhg).second;
+-        fromWeight = deltaPhg.partWeight(move.from);
+-        toWeight = deltaPhg.partWeight(move.to);
+-        if (expect_improvement) {
+-          // since we will flush the move sequence, don't bother running it through the deltaPhg
+-          // this is intended to allow moving high deg nodes (blow up hash tables) if they give an improvement
+-          moved = toWeight + phg.nodeWeight(move.node) <= context.partition.max_part_weights[move.to];
+-        } else {
++      if (move.to != kInvalidPartition) {
++        if constexpr (use_delta) {
++          heaviestPartWeight = heaviestPartAndWeight(deltaPhg).second;
++          fromWeight = deltaPhg.partWeight(move.from);
++          toWeight = deltaPhg.partWeight(move.to);
+           moved = deltaPhg.changeNodePart(move.node, move.from, move.to,
+                                           context.partition.max_part_weights[move.to], delta_func);
++        } else {
++          heaviestPartWeight = heaviestPartAndWeight(phg).second;
++          fromWeight = phg.partWeight(move.from);
++          toWeight = phg.partWeight(move.to);
++          moved = phg.changeNodePart(move.node, move.from, move.to,
++                                     context.partition.max_part_weights[move.to],
++                                     [&] { move_id = sharedData.moveTracker.insertMove(move); }, delta_func);
+         }
+-      } else {
+-        heaviestPartWeight = heaviestPartAndWeight(phg).second;
+-        fromWeight = phg.partWeight(move.from);
+-        toWeight = phg.partWeight(move.to);
+-        moved = phg.changeNodePart(move.node, move.from, move.to,
+-                                   context.partition.max_part_weights[move.to],
+-                                   [&] { move_id = sharedData.moveTracker.insertMove(move); }, delta_func);
+       }
+ 
+       if (moved) {
+@@ -196,8 +176,8 @@ namespace mt_kahypar {
+         estimatedImprovement += move.gain;
+         localMoves.emplace_back(move, move_id);
+         stopRule.update(move.gain);
+-        bool improved_km1 = estimatedImprovement > bestImprovement;
+-        bool improved_balance_less_equal_km1 = estimatedImprovement >= bestImprovement
++        const bool improved_km1 = estimatedImprovement > bestImprovement;
++        const bool improved_balance_less_equal_km1 = estimatedImprovement >= bestImprovement
+                                                      && fromWeight == heaviestPartWeight
+                                                      && toWeight + phg.nodeWeight(move.node) < heaviestPartWeight;
+ 
+@@ -214,12 +194,6 @@ namespace mt_kahypar {
+           }
+         }
+ 
+-        // no need to update our PQs if we stop anyways
+-        if (stopRule.searchShouldStop()
+-              || sharedData.finishedTasks.load(std::memory_order_relaxed) >= sharedData.finishedTasksLimit) {
+-          break;
+-        }
+-
+         if constexpr (use_delta) {
+           acquireOrUpdateNeighbors(deltaPhg, move);
+         } else {
+@@ -364,4 +338,4 @@ namespace mt_kahypar {
+   template class LocalizedKWayFM<GainDeltaStrategy>;
+   template class LocalizedKWayFM<RecomputeGainStrategy>;
+   template class LocalizedKWayFM<GainCacheOnDemandStrategy>;
+-}
++}
+\ No newline at end of file
+diff --git a/mt-kahypar/partition/refinement/fm/multitry_kway_fm.cpp b/mt-kahypar/partition/refinement/fm/multitry_kway_fm.cpp
+index ee3d7d65..dfec9c0a 100644
+--- a/mt-kahypar/partition/refinement/fm/multitry_kway_fm.cpp
++++ b/mt-kahypar/partition/refinement/fm/multitry_kway_fm.cpp
+@@ -86,7 +86,7 @@ namespace mt_kahypar {
+       timer.stop_timer("find_moves");
+ 
+       timer.start_timer("rollback", "Rollback to Best Solution");
+-      phg.resetMoveState();
++      phg.resetMoveState(true);
+       HyperedgeWeight improvement = globalRollback.revertToBestPrefix
+               <FMStrategy::maintain_gain_cache_between_rounds>(phg, sharedData, initialPartWeights);
+       timer.stop_timer("rollback");
+@@ -191,11 +191,7 @@ namespace mt_kahypar {
+ 
+   template<typename FMStrategy>
+   void MultiTryKWayFM<FMStrategy>::initializeImpl(PartitionedHypergraph& phg) {
+-    if (FMStrategy::uses_gain_cache) {
+-      phg.allocateGainTableIfNecessary();
+-    }
+-
+-    if (!phg.isGainCacheInitialized() && FMStrategy::maintain_gain_cache_between_rounds) {
++    if ( !phg.isGainCacheInitialized() && FMStrategy::maintain_gain_cache_between_rounds ) {
+       phg.initializeGainCache();
+     }
+ 
+diff --git a/mt-kahypar/partition/refinement/fm/sequential_twoway_fm_refiner.cpp b/mt-kahypar/partition/refinement/fm/sequential_twoway_fm_refiner.cpp
+index df4c1d24..5f795cbe 100644
+--- a/mt-kahypar/partition/refinement/fm/sequential_twoway_fm_refiner.cpp
++++ b/mt-kahypar/partition/refinement/fm/sequential_twoway_fm_refiner.cpp
+@@ -138,8 +138,8 @@ bool SequentialTwoWayFmRefiner::refine(Metrics& best_metrics, std::mt19937& prng
+   }
+ 
+   // Perform rollback to best partition found during local search
+-  _phg.resetMoveState();
+   rollback(performed_moves, min_cut_idx);
++  _phg.resetMoveState(false);
+ 
+   HEAVY_REFINEMENT_ASSERT(best_metrics.cut == metrics::hyperedgeCut(_phg, false));
+   HEAVY_REFINEMENT_ASSERT(best_metrics.imbalance == metrics::imbalance(_phg, _context),
+diff --git a/mt-kahypar/partition/refinement/label_propagation/label_propagation_refiner.cpp b/mt-kahypar/partition/refinement/label_propagation/label_propagation_refiner.cpp
+index 5237824e..f086244f 100644
+--- a/mt-kahypar/partition/refinement/label_propagation/label_propagation_refiner.cpp
++++ b/mt-kahypar/partition/refinement/label_propagation/label_propagation_refiner.cpp
+@@ -36,7 +36,6 @@ namespace mt_kahypar {
+                   const parallel::scalable_vector<HypernodeID>& refinement_nodes,
+                   Metrics& best_metrics,
+                   const double)  {
+-    hypergraph.resetMoveState();
+     _gain.reset();
+     _next_active.reset();
+ 
+diff --git a/mt-kahypar/partition/registries/register_memory_pool.cpp b/mt-kahypar/partition/registries/register_memory_pool.cpp
+index 2bf4d7f6..e30cb680 100644
+--- a/mt-kahypar/partition/registries/register_memory_pool.cpp
++++ b/mt-kahypar/partition/registries/register_memory_pool.cpp
+@@ -69,63 +69,36 @@ namespace mt_kahypar {
+ 
+       pool.register_memory_group("Coarsening", 2);
+       if ( context.partition.paradigm == Paradigm::multilevel ) {
+-        if (Hypergraph::is_graph) {
+-          pool.register_memory_chunk("Coarsening", "mapping", num_hypernodes, sizeof(HypernodeID));
+-          pool.register_memory_chunk("Coarsening", "tmp_nodes", num_hypernodes, Hypergraph::SIZE_OF_HYPERNODE);
+-          pool.register_memory_chunk("Coarsening", "node_sizes", num_hypernodes, sizeof(HyperedgeID));
+-          pool.register_memory_chunk("Coarsening", "tmp_num_incident_edges",
+-                                     num_hypernodes, sizeof(parallel::IntegralAtomicWrapper<HyperedgeID>));
+-          pool.register_memory_chunk("Coarsening", "node_weights",
+-                                     num_hypernodes, sizeof(parallel::IntegralAtomicWrapper<HypernodeWeight>));
+-          pool.register_memory_chunk("Coarsening", "tmp_edges", num_hyperedges, Hypergraph::SIZE_OF_HYPEREDGE);
+-          pool.register_memory_chunk("Coarsening", "edge_id_mapping", num_hyperedges / 2, sizeof(HyperedgeID));
+-        } else {
+-          pool.register_memory_chunk("Coarsening", "mapping", num_hypernodes, sizeof(size_t));
+-          pool.register_memory_chunk("Coarsening", "tmp_hypernodes", num_hypernodes, Hypergraph::SIZE_OF_HYPERNODE);
+-          pool.register_memory_chunk("Coarsening", "tmp_incident_nets", num_pins, sizeof(HyperedgeID));
+-          pool.register_memory_chunk("Coarsening", "tmp_num_incident_nets",
+-                                    num_hypernodes, sizeof(parallel::IntegralAtomicWrapper<size_t>));
+-          pool.register_memory_chunk("Coarsening", "hn_weights",
+-                                    num_hypernodes, sizeof(parallel::IntegralAtomicWrapper<HypernodeWeight>));
+-          pool.register_memory_chunk("Coarsening", "tmp_hyperedges", num_hyperedges, Hypergraph::SIZE_OF_HYPEREDGE);
+-          pool.register_memory_chunk("Coarsening", "tmp_incidence_array", num_pins, sizeof(HypernodeID));
+-          pool.register_memory_chunk("Coarsening", "he_sizes", num_hyperedges, sizeof(size_t));
+-          pool.register_memory_chunk("Coarsening", "valid_hyperedges", num_hyperedges, sizeof(size_t));
+-        }
++        pool.register_memory_chunk("Coarsening", "mapping", num_hypernodes, sizeof(size_t));
++        pool.register_memory_chunk("Coarsening", "tmp_hypernodes", num_hypernodes, Hypergraph::SIZE_OF_HYPERNODE);
++        pool.register_memory_chunk("Coarsening", "tmp_incident_nets", num_pins, sizeof(HyperedgeID));
++        pool.register_memory_chunk("Coarsening", "tmp_num_incident_nets",
++                                  num_hypernodes, sizeof(parallel::IntegralAtomicWrapper<size_t>));
++        pool.register_memory_chunk("Coarsening", "hn_weights",
++                                  num_hypernodes, sizeof(parallel::IntegralAtomicWrapper<HypernodeWeight>));
++        pool.register_memory_chunk("Coarsening", "tmp_hyperedges", num_hyperedges, Hypergraph::SIZE_OF_HYPEREDGE);
++        pool.register_memory_chunk("Coarsening", "tmp_incidence_array", num_pins, sizeof(HypernodeID));
++        pool.register_memory_chunk("Coarsening", "he_sizes", num_hyperedges, sizeof(size_t));
++        pool.register_memory_chunk("Coarsening", "valid_hyperedges", num_hyperedges, sizeof(size_t));
+       }
+ 
+       // ########## Refinement Memory ##########
+ 
+       pool.register_memory_group("Refinement", 3);
++      const HypernodeID max_he_size = hypergraph.maxEdgeSize();
+       pool.register_memory_chunk("Refinement", "part_ids", num_hypernodes, sizeof(PartitionID));
+-
+-      if (Hypergraph::is_graph) {
+-        #ifdef USE_GRAPH_PARTITIONER // SIZE_OF_EDGE_LOCK is only available in the graph data structure
+-          pool.register_memory_chunk("Refinement", "edge_locks", num_hyperedges, PartitionedHypergraph::SIZE_OF_EDGE_LOCK);
+-        #endif
+-        if ( context.refinement.fm.algorithm != FMAlgorithm::do_nothing ) {
+-          pool.register_memory_chunk("Refinement", "incident_weight_in_part",
+-                                    static_cast<size_t>(num_hypernodes) * ( context.partition.k + 1 ),
+-                                    sizeof(CAtomic<HyperedgeWeight>));
+-        }
+-      } else {
+-        const HypernodeID max_he_size = hypergraph.maxEdgeSize();
+-        pool.register_memory_chunk("Refinement", "pin_count_in_part",
+-                                  ds::PinCountInPart::num_elements(num_hyperedges, context.partition.k, max_he_size),
+-                                  sizeof(ds::PinCountInPart::Value));
+-        pool.register_memory_chunk("Refinement", "connectivity_set",
+-                                  ds::ConnectivitySets::num_elements(num_hyperedges, context.partition.k),
+-                                  sizeof(ds::ConnectivitySets::UnsafeBlock));
+-        if ( context.refinement.fm.algorithm != FMAlgorithm::do_nothing ) {
+-          pool.register_memory_chunk("Refinement", "move_to_penalty",
+-                                    static_cast<size_t>(num_hypernodes) * ( context.partition.k + 1 ),
+-                                    sizeof(CAtomic<HyperedgeWeight>));
+-          pool.register_memory_chunk("Refinement", "move_from_penalty",
+-                                    num_hypernodes, sizeof(CAtomic<HyperedgeWeight>));
+-        }
+-        pool.register_memory_chunk("Refinement", "pin_count_update_ownership",
+-                                  num_hyperedges, sizeof(SpinLock));
+-      }
++      pool.register_memory_chunk("Refinement", "pin_count_in_part",
++                                ds::PinCountInPart::num_elements(num_hyperedges, context.partition.k, max_he_size),
++                                sizeof(ds::PinCountInPart::Value));
++      pool.register_memory_chunk("Refinement", "connectivity_set",
++                                ds::ConnectivitySets::num_elements(num_hyperedges, context.partition.k),
++                                sizeof(ds::ConnectivitySets::UnsafeBlock));
++      pool.register_memory_chunk("Refinement", "move_to_penalty",
++                                static_cast<size_t>(num_hypernodes) * ( context.partition.k + 1 ), sizeof(CAtomic<HyperedgeWeight>));
++      pool.register_memory_chunk("Refinement", "move_from_penalty",
++                                num_hypernodes, sizeof(CAtomic<HyperedgeWeight>));
++      pool.register_memory_chunk("Refinement", "pin_count_update_ownership",
++                                num_hyperedges, sizeof(SpinLock));
+ 
+       // Allocate Memory
+       utils::Timer::instance().start_timer("memory_pool_allocation", "Memory Pool Allocation");
+@@ -135,4 +108,4 @@ namespace mt_kahypar {
+   }
+ 
+ 
+-} // namespace mt_kahypar
++} // namespace mt_kahypar
+\ No newline at end of file
+diff --git a/mt-kahypar/utils/hypergraph_statistics.h b/mt-kahypar/utils/hypergraph_statistics.h
+index d3450143..77b74b07 100644
+--- a/mt-kahypar/utils/hypergraph_statistics.h
++++ b/mt-kahypar/utils/hypergraph_statistics.h
+@@ -56,9 +56,6 @@ double parallel_avg(const std::vector<T>& data, const size_t n) {
+ }
+ 
+ static inline double avgHyperedgeDegree(const Hypergraph& hypergraph) {
+-    if (Hypergraph::is_graph) {
+-        return 2;
+-    }
+     return static_cast<double>(hypergraph.initialNumPins()) / hypergraph.initialNumEdges();
+ }
+ 
+diff --git a/mt-kahypar/utils/timer.h b/mt-kahypar/utils/timer.h
+index c33be2e0..80b3efa7 100644
+--- a/mt-kahypar/utils/timer.h
++++ b/mt-kahypar/utils/timer.h
+@@ -209,7 +209,7 @@ class TimerT {
+       // no active timings we pop from global stack
+       if (!_local_active_timings.local().empty()) {
+         ASSERT(_local_active_timings.local().back().key() == key,
+-          V(_local_active_timings.local().back().key()) << V(key));
++          V(_local_active_timings.local().back().key() << V(key)));
+         current_timing = _local_active_timings.local().back();
+         _local_active_timings.local().pop_back();
+       } else {
+diff --git a/tests/datastructures/CMakeLists.txt b/tests/datastructures/CMakeLists.txt
+index 40a7297e..b733c2e0 100644
+--- a/tests/datastructures/CMakeLists.txt
++++ b/tests/datastructures/CMakeLists.txt
+@@ -30,7 +30,4 @@ target_sources(mt_kahypar_graph_tests PRIVATE
+         static_graph_test.cc
+         partitioned_graph_test.cc
+         delta_partitioned_graph_test.cc
+-        dynamic_adjacency_array_test.cc
+-        dynamic_graph_test.cc
+-        nlevel_smoke_test.cc
+ )
+diff --git a/tests/datastructures/dynamic_hypergraph_test.cc b/tests/datastructures/dynamic_hypergraph_test.cc
+index 76b0c7f6..290413af 100644
+--- a/tests/datastructures/dynamic_hypergraph_test.cc
++++ b/tests/datastructures/dynamic_hypergraph_test.cc
+@@ -1087,32 +1087,34 @@ TEST_F(ADynamicHypergraph, CreateBatchUncontractionHierarchy5) {
+ }
+ 
+ 
+-// TODO(heuer): test fails sporadically on CI -> further investigation and fix required
+-// TEST_F(ADynamicHypergraph, CreateBatchUncontractionHierarchy6) {
+-//   ContractionTree tree;
+-//   // Binary Tree where each left child has exactly two childrens
+-//   tree.initialize(15);
+-//   tree.setParent(1, 0);
+-//   tree.setParent(2, 0);
+-//   tree.setParent(3, 1);
+-//   tree.setParent(4, 1);
+-//   tree.setParent(5, 3);
+-//   tree.setParent(6, 3);
+-//   tree.setParent(7, 5);
+-//   tree.setParent(8, 5);
+-//   tree.setParent(9, 7);
+-//   tree.setParent(10, 7);
+-//   tree.setParent(11, 9);
+-//   tree.setParent(12, 9);
+-//   tree.setParent(13, 11);
+-//   tree.setParent(14, 11);
+-//   auto versioned_batches = hypergraph.createBatchUncontractionHierarchy(tree.copy(), 4);
+-//   ASSERT_EQ(1, versioned_batches.size());
+-//   for ( size_t i = 0; i < versioned_batches.size(); ++i ) {
+-//     ASSERT_EQ(2, versioned_batches.back()[i].size());
+-//   }
+-//   verifyBatchUncontractionHierarchy(tree, versioned_batches, 4);
+-// }
++#ifndef KAHYPAR_TRAVIS_BUILD
++// TODO: test fails sporadically on Travis -> further investigation required
++TEST_F(ADynamicHypergraph, CreateBatchUncontractionHierarchy6) {
++  ContractionTree tree;
++  // Binary Tree where each left child has exactly two childrens
++  tree.initialize(15);
++  tree.setParent(1, 0);
++  tree.setParent(2, 0);
++  tree.setParent(3, 1);
++  tree.setParent(4, 1);
++  tree.setParent(5, 3);
++  tree.setParent(6, 3);
++  tree.setParent(7, 5);
++  tree.setParent(8, 5);
++  tree.setParent(9, 7);
++  tree.setParent(10, 7);
++  tree.setParent(11, 9);
++  tree.setParent(12, 9);
++  tree.setParent(13, 11);
++  tree.setParent(14, 11);
++  auto versioned_batches = hypergraph.createBatchUncontractionHierarchy(tree.copy(), 4);
++  ASSERT_EQ(1, versioned_batches.size());
++  for ( size_t i = 0; i < versioned_batches.size(); ++i ) {
++    ASSERT_EQ(2, versioned_batches.back()[i].size());
++  }
++  verifyBatchUncontractionHierarchy(tree, versioned_batches, 4);
++}
++#endif
+ 
+ TEST_F(ADynamicHypergraph, CreateBatchUncontractionHierarchyWithDifferentVersions1) {
+   ContractionTree tree;
+diff --git a/tests/datastructures/graph_test.cc b/tests/datastructures/graph_test.cc
+index eb3f0b22..cb3b4285 100644
+--- a/tests/datastructures/graph_test.cc
++++ b/tests/datastructures/graph_test.cc
+@@ -235,7 +235,7 @@ TEST_F(AGraph, ConstructsAHypergraphWhichIsAGraph) {
+   Hypergraph graph_hg = HypergraphFactory::construct(
+     5, 6,
+     { { 0, 1 }, { 0, 2 }, {1, 2}, { 2, 3 }, { 2, 4 }, { 3, 4 } } );
+-  Graph graph(graph_hg, LouvainEdgeWeight::uniform, true);
++  Graph graph(graph_hg, LouvainEdgeWeight::uniform);
+   ASSERT_EQ(4, graph.max_degree());
+   verifyArcIterator(graph, 0, {1, 2}, {1.0, 1.0});
+   verifyArcIterator(graph, 1, {0, 2}, {1.0, 1.0});
+diff --git a/tests/datastructures/nlevel_smoke_test.cc b/tests/datastructures/nlevel_smoke_test.cc
+index 6fc34b38..f5246fd7 100644
+--- a/tests/datastructures/nlevel_smoke_test.cc
++++ b/tests/datastructures/nlevel_smoke_test.cc
+@@ -20,40 +20,21 @@
+ #include "gmock/gmock.h"
+ 
+ #include <atomic>
+-#include <set>
+ 
+ #include "mt-kahypar/definitions.h"
+ #include "mt-kahypar/datastructures/dynamic_hypergraph.h"
+ #include "mt-kahypar/datastructures/dynamic_hypergraph_factory.h"
+ #include "mt-kahypar/datastructures/partitioned_hypergraph.h"
+-#include "mt-kahypar/datastructures/dynamic_graph.h"
+-#include "mt-kahypar/datastructures/dynamic_graph_factory.h"
+-#include "mt-kahypar/datastructures/partitioned_graph.h"
+ #include "mt-kahypar/partition/metrics.h"
+ #include "mt-kahypar/utils/randomize.h"
+ 
+ namespace mt_kahypar {
+ namespace ds {
+ 
+-#ifdef USE_GRAPH_PARTITIONER
+-using DynamicHypergraphT = DynamicGraph;
+-using DynamicHypergraphFactoryT = DynamicGraphFactory;
+-using DynamicPartitionedHypergraphT = PartitionedGraph<DynamicHypergraphT, DynamicHypergraphFactoryT>;
+-#else
+-using DynamicHypergraphT = DynamicHypergraph;
+-using DynamicHypergraphFactoryT = DynamicHypergraphFactory;
+-using DynamicPartitionedHypergraphT = PartitionedHypergraph<DynamicHypergraphT, DynamicHypergraphFactoryT>;
+-#endif
+-
+-void verifyEqualityOfHypergraphs(const DynamicHypergraphT& e_hypergraph,
+-                                 const DynamicHypergraphT& a_hypergraph) {
+-  DynamicHypergraphT expected_hypergraph = e_hypergraph.copy();
+-  DynamicHypergraphT actual_hypergraph = a_hypergraph.copy();
+-  #ifdef USE_GRAPH_PARTITIONER
+-  expected_hypergraph.sortIncidentEdges();
+-  actual_hypergraph.sortIncidentEdges();
+-  #endif
++using DynamicPartitionedHypergraph = PartitionedHypergraph<DynamicHypergraph, DynamicHypergraphFactory>;
+ 
++void verifyEqualityOfHypergraphs(const DynamicHypergraph& expected_hypergraph,
++                                 const DynamicHypergraph& actual_hypergraph) {
+   parallel::scalable_vector<HyperedgeID> expected_incident_edges;
+   parallel::scalable_vector<HyperedgeID> actual_incident_edges;
+   for ( const HypernodeID& hn : expected_hypergraph.nodes() ) {
+@@ -69,25 +50,13 @@ void verifyEqualityOfHypergraphs(const DynamicHypergraphT& e_hypergraph,
+     std::sort(expected_incident_edges.begin(), expected_incident_edges.end());
+     std::sort(actual_incident_edges.begin(), actual_incident_edges.end());
+     ASSERT_EQ(expected_incident_edges.size(), actual_incident_edges.size());
+-
+-    #ifdef USE_GRAPH_PARTITIONER
+-    for ( size_t i = 0; i < expected_incident_edges.size(); ++i ) {
+-      HyperedgeID exp = expected_incident_edges[i];
+-      HyperedgeID act = actual_incident_edges[i];
+-      ASSERT_EQ(expected_hypergraph.edgeSource(exp), actual_hypergraph.edgeSource(act));
+-      ASSERT_EQ(expected_hypergraph.edgeTarget(exp), actual_hypergraph.edgeTarget(act));
+-      ASSERT_EQ(expected_hypergraph.edgeWeight(exp), actual_hypergraph.edgeWeight(act));
+-    }
+-    #else
+     for ( size_t i = 0; i < expected_incident_edges.size(); ++i ) {
+       ASSERT_EQ(expected_incident_edges[i], actual_incident_edges[i]);
+     }
+-    #endif
+     expected_incident_edges.clear();
+     actual_incident_edges.clear();
+   }
+ 
+-  #ifndef USE_GRAPH_PARTITIONER
+   parallel::scalable_vector<HypernodeID> expected_pins;
+   parallel::scalable_vector<HypernodeID> actual_pins;
+   for ( const HyperedgeID& he : expected_hypergraph.edges() ) {
+@@ -106,18 +75,17 @@ void verifyEqualityOfHypergraphs(const DynamicHypergraphT& e_hypergraph,
+     expected_pins.clear();
+     actual_pins.clear();
+   }
+-  #endif
+ }
+ 
+-HyperedgeWeight compute_km1(DynamicPartitionedHypergraphT& partitioned_hypergraph) {
++HyperedgeWeight compute_km1(DynamicPartitionedHypergraph& partitioned_hypergraph) {
+   HyperedgeWeight km1 = 0;
+   for (const HyperedgeID& he : partitioned_hypergraph.edges()) {
+     km1 += std::max(partitioned_hypergraph.connectivity(he) - 1, 0) * partitioned_hypergraph.edgeWeight(he);
+   }
+-  return DynamicHypergraphT::is_graph ? km1 / 2 : km1;
++  return km1;
+ }
+ 
+-void verifyGainCache(DynamicPartitionedHypergraphT& partitioned_hypergraph) {
++void verifyGainCache(DynamicPartitionedHypergraph& partitioned_hypergraph) {
+   const PartitionID k = partitioned_hypergraph.k();
+   utils::Randomize& rand = utils::Randomize::instance();
+   HyperedgeWeight km1_before = compute_km1(partitioned_hypergraph);
+@@ -133,7 +101,7 @@ void verifyGainCache(DynamicPartitionedHypergraphT& partitioned_hypergraph) {
+   ASSERT_EQ(expected_gain, km1_before - km1_after) << V(expected_gain) << V(km1_before) << V(km1_after);
+ }
+ 
+-void verifyNumIncidentCutHyperedges(const DynamicPartitionedHypergraphT& partitioned_hypergraph) {
++void verifyNumIncidentCutHyperedges(const DynamicPartitionedHypergraph& partitioned_hypergraph) {
+   partitioned_hypergraph.doParallelForAllNodes([&](const HypernodeID& hn) {
+     HypernodeID expected_num_cut_hyperedges = 0;
+     for ( const HyperedgeID& he : partitioned_hypergraph.incidentEdges(hn) ) {
+@@ -145,30 +113,13 @@ void verifyNumIncidentCutHyperedges(const DynamicPartitionedHypergraphT& partiti
+   });
+ }
+ 
+-DynamicHypergraphT generateRandomHypergraph(const HypernodeID num_hypernodes,
++DynamicHypergraph generateRandomHypergraph(const HypernodeID num_hypernodes,
+                                            const HyperedgeID num_hyperedges,
+                                            const HypernodeID max_edge_size) {
+   parallel::scalable_vector<parallel::scalable_vector<HypernodeID>> hyperedges;
+   utils::Randomize& rand = utils::Randomize::instance();
+-
+-  #ifdef USE_GRAPH_PARTITIONER
+-  std::set<std::pair<HypernodeID, HypernodeID>> graph_edges;
+-  for ( size_t i = 0; i < num_hypernodes; ++i ) {
+-    graph_edges.insert({i, i});
+-  }
+-  #endif
+-
+   for ( size_t i = 0; i < num_hyperedges; ++i ) {
+     parallel::scalable_vector<HypernodeID> net;
+-    #ifdef USE_GRAPH_PARTITIONER
+-    unused(max_edge_size);
+-    std::pair<HypernodeID, HypernodeID> edge{rand.getRandomInt(0, num_hypernodes - 1, sched_getcpu()),
+-                                             rand.getRandomInt(0, num_hypernodes - 1, sched_getcpu())};
+-    graph_edges.insert({edge});
+-    graph_edges.insert({edge.first, edge.second});
+-    net.push_back(edge.first);
+-    net.push_back(edge.second);
+-    #else
+     const size_t edge_size = rand.getRandomInt(2, max_edge_size, sched_getcpu());
+     for ( size_t i = 0; i < edge_size; ++i ) {
+       const HypernodeID pin = rand.getRandomInt(0, num_hypernodes - 1, sched_getcpu());
+@@ -176,10 +127,9 @@ DynamicHypergraphT generateRandomHypergraph(const HypernodeID num_hypernodes,
+         net.push_back(pin);
+       }
+     }
+-    #endif
+     hyperedges.emplace_back(std::move(net));
+   }
+-  return DynamicHypergraphFactoryT::construct(num_hypernodes, num_hyperedges, hyperedges);
++  return DynamicHypergraphFactory::construct(num_hypernodes, num_hyperedges, hyperedges);
+ }
+ 
+ BatchVector generateRandomContractions(const HypernodeID num_hypernodes,
+@@ -212,7 +162,7 @@ BatchVector generateRandomContractions(const HypernodeID num_hypernodes,
+  return contractions;
+ }
+ 
+-void generateRandomPartition(DynamicPartitionedHypergraphT& partitioned_hypergraph) {
++void generateRandomPartition(DynamicPartitionedHypergraph& partitioned_hypergraph) {
+   const PartitionID k = partitioned_hypergraph.k();
+   utils::Randomize& rand = utils::Randomize::instance();
+   partitioned_hypergraph.doParallelForAllNodes([&](const HypernodeID& hn) {
+@@ -220,8 +170,8 @@ void generateRandomPartition(DynamicPartitionedHypergraphT& partitioned_hypergra
+   });
+ }
+ 
+-DynamicHypergraphT simulateNLevel(DynamicHypergraphT& hypergraph,
+-                                 DynamicPartitionedHypergraphT& partitioned_hypergraph,
++DynamicHypergraph simulateNLevel(DynamicHypergraph& hypergraph,
++                                 DynamicPartitionedHypergraph& partitioned_hypergraph,
+                                  const BatchVector& contraction_batches,
+                                  const size_t batch_size,
+                                  const bool parallel) {
+@@ -234,7 +184,7 @@ DynamicHypergraphT simulateNLevel(DynamicHypergraphT& hypergraph,
+     }
+   };
+ 
+-  parallel::scalable_vector<parallel::scalable_vector<DynamicHypergraphT::ParallelHyperedge>> removed_hyperedges;
++  parallel::scalable_vector<parallel::scalable_vector<ParallelHyperedge>> removed_hyperedges;
+   for ( size_t i = 0; i < contraction_batches.size(); ++i ) {
+     utils::Timer::instance().start_timer(timer_key("contractions"), "Contractions");
+     const parallel::scalable_vector<Memento>& contractions = contraction_batches[i];
+@@ -259,7 +209,7 @@ DynamicHypergraphT simulateNLevel(DynamicHypergraphT& hypergraph,
+   }
+ 
+   utils::Timer::instance().start_timer(timer_key("copy_coarsest_hypergraph"), "Copy Coarsest Hypergraph");
+-  DynamicHypergraphT coarsest_hypergraph;
++  DynamicHypergraph coarsest_hypergraph;
+   if ( parallel ) {
+     coarsest_hypergraph = hypergraph.copy(parallel_tag_t());
+   } else {
+@@ -272,10 +222,10 @@ DynamicHypergraphT simulateNLevel(DynamicHypergraphT& hypergraph,
+ 
+   {
+     utils::Timer::instance().start_timer(timer_key("compactify_hypergraph"), "Compactify Hypergraph");
+-    auto res = DynamicHypergraphFactoryT::compactify(hypergraph);
+-    DynamicHypergraphT& compactified_hg = res.first;
++    auto res = DynamicHypergraphFactory::compactify(hypergraph);
++    DynamicHypergraph& compactified_hg = res.first;
+     auto& hn_mapping = res.second;
+-    DynamicPartitionedHypergraphT compactified_phg(
++    DynamicPartitionedHypergraph compactified_phg(
+       partitioned_hypergraph.k(), compactified_hg, parallel_tag_t());
+     utils::Timer::instance().stop_timer(timer_key("compactify_hypergraph"));
+ 
+@@ -324,8 +274,6 @@ DynamicHypergraphT simulateNLevel(DynamicHypergraphT& hypergraph,
+       utils::Timer::instance().stop_timer(timer_key("restore_parallel_nets"));
+     }
+   }
+-
+-  partitioned_hypergraph.resetMoveState();
+   utils::Timer::instance().stop_timer(timer_key("batch_uncontractions"));
+ 
+   return coarsest_hypergraph;
+@@ -333,7 +281,7 @@ DynamicHypergraphT simulateNLevel(DynamicHypergraphT& hypergraph,
+ 
+ TEST(ANlevel, SimulatesContractionsAndBatchUncontractions) {
+   const HypernodeID num_hypernodes = 10000;
+-  const HypernodeID num_hyperedges = DynamicHypergraphT::is_graph ? 40000 : 10000;
++  const HypernodeID num_hyperedges = 10000;
+   const HypernodeID max_edge_size = 30;
+   const HypernodeID num_contractions = 9950;
+   const size_t batch_size = 100;
+@@ -341,11 +289,11 @@ TEST(ANlevel, SimulatesContractionsAndBatchUncontractions) {
+   const bool debug = false;
+ 
+   if ( debug ) LOG << "Generate Random Hypergraph";
+-  DynamicHypergraphT original_hypergraph = generateRandomHypergraph(num_hypernodes, num_hyperedges, max_edge_size);
+-  DynamicHypergraphT sequential_hg = original_hypergraph.copy(parallel_tag_t());
+-  DynamicPartitionedHypergraphT sequential_phg(4, sequential_hg, parallel_tag_t());
+-  DynamicHypergraphT parallel_hg = original_hypergraph.copy(parallel_tag_t());
+-  DynamicPartitionedHypergraphT parallel_phg(4, parallel_hg, parallel_tag_t());
++  DynamicHypergraph original_hypergraph = generateRandomHypergraph(num_hypernodes, num_hyperedges, max_edge_size);
++  DynamicHypergraph sequential_hg = original_hypergraph.copy(parallel_tag_t());
++  DynamicPartitionedHypergraph sequential_phg(4, sequential_hg, parallel_tag_t());
++  DynamicHypergraph parallel_hg = original_hypergraph.copy(parallel_tag_t());
++  DynamicPartitionedHypergraph parallel_phg(4, parallel_hg, parallel_tag_t());
+ 
+   if ( debug ) LOG << "Determine random contractions";
+   BatchVector contractions = generateRandomContractions(num_hypernodes, num_contractions);
+@@ -354,12 +302,12 @@ TEST(ANlevel, SimulatesContractionsAndBatchUncontractions) {
+ 
+   if ( debug ) LOG << "Simulate n-Level sequentially";
+   utils::Timer::instance().start_timer("sequential_n_level", "Sequential n-Level");
+-  DynamicHypergraphT coarsest_sequential_hg = simulateNLevel(sequential_hg, sequential_phg, contractions, 1, false);
++  DynamicHypergraph coarsest_sequential_hg = simulateNLevel(sequential_hg, sequential_phg, contractions, 1, false);
+   utils::Timer::instance().stop_timer("sequential_n_level");
+ 
+   if ( debug ) LOG << "Simulate n-Level in parallel";
+   utils::Timer::instance().start_timer("parallel_n_level", "Parallel n-Level");
+-  DynamicHypergraphT coarsest_parallel_hg = simulateNLevel(parallel_hg, parallel_phg, contractions, batch_size, true);
++  DynamicHypergraph coarsest_parallel_hg = simulateNLevel(parallel_hg, parallel_phg, contractions, batch_size, true);
+   utils::Timer::instance().stop_timer("parallel_n_level");
+ 
+   if ( debug ) LOG << "Verify equality of hypergraphs";
+@@ -382,15 +330,15 @@ TEST(ANlevel, SimulatesContractionsAndBatchUncontractions) {
+ 
+ TEST(ANlevel, SimulatesParallelContractionsAndAccessToHypergraph) {
+   const HypernodeID num_hypernodes = 10000;
+-  const HypernodeID num_hyperedges = DynamicHypergraphT::is_graph ? 40000 : 10000;
++  const HypernodeID num_hyperedges = 10000;
+   const HypernodeID max_edge_size = 30;
+   const HypernodeID num_contractions = 9950;
+   const bool show_timings = false;
+   const bool debug = false;
+ 
+   if ( debug ) LOG << "Generate Random Hypergraph";
+-  DynamicHypergraphT hypergraph = generateRandomHypergraph(num_hypernodes, num_hyperedges, max_edge_size);
+-  DynamicHypergraphT tmp_hypergraph = hypergraph.copy(parallel_tag_t());
++  DynamicHypergraph hypergraph = generateRandomHypergraph(num_hypernodes, num_hyperedges, max_edge_size);
++  DynamicHypergraph tmp_hypergraph = hypergraph.copy(parallel_tag_t());
+ 
+   if ( debug ) LOG << "Determine random contractions";
+   BatchVector contractions = generateRandomContractions(num_hypernodes, num_contractions, false);
+diff --git a/tests/end_to_end/integration_tests.json b/tests/end_to_end/integration_tests.json
+index 0c9fc1a6..ed55766c 100644
+--- a/tests/end_to_end/integration_tests.json
++++ b/tests/end_to_end/integration_tests.json
+@@ -11,15 +11,6 @@
+                      "parameters": ["--num-vcycles=1"] },
+                    { "partitioner": "Mt-KaHyPar-Graph",
+                      "parameters": ["--p-enable-community-detection=false"] } ]},
+-      { "name": "Mt-KaHyPar Graph Quality Tests",
+-      "instances": [ "tests/instances/delaunay_n15.graph.hgr" ],
+-      "tests": [ { "partitioner": "Mt-KaHyPar-GraphQ" },
+-                  { "partitioner": "Mt-KaHyPar-GraphQ",
+-                    "parameters": ["--i-mode=deep"] },
+-                  { "partitioner": "Mt-KaHyPar-GraphQ",
+-                    "parameters": ["--num-vcycles=1"] },
+-                  { "partitioner": "Mt-KaHyPar-GraphQ",
+-                    "parameters": ["--p-enable-community-detection=false"] } ]},
+       { "name": "Mt-KaHyPar-D Tests",
+         "instances": [ "tests/instances/ibm01.hgr",
+                       "tests/instances/sat14_atco_enc1_opt2_10_16.cnf.primal.hgr",
+diff --git a/tests/end_to_end/integration_tests.py b/tests/end_to_end/integration_tests.py
+index 5cd448f6..fb74b5a0 100755
+--- a/tests/end_to_end/integration_tests.py
++++ b/tests/end_to_end/integration_tests.py
+@@ -23,9 +23,6 @@ partitioners = { "Mt-KaHyPar-D":     { "executable": executable_dir + "MtKaHyPar
+                  "Mt-KaHyPar-Graph": { "executable": executable_dir + "MtKaHyParGraph",
+                                        "config":  config_dir + "default_preset.ini",
+                                        "mode": "direct" },
+-                 "Mt-KaHyPar-GraphQ": { "executable": executable_dir + "MtKaHyParGraphQuality",
+-                                       "config":  config_dir + "quality_preset.ini",
+-                                       "mode": "direct" },
+                  "Mt-KaHyPar-Det":   { "executable": executable_dir + "MtKaHyParDefault",
+                                        "config":  config_dir + "deterministic_preset.ini",
+                                        "mode": "direct" },
+diff --git a/tests/io/hypergraph_io_test.cc b/tests/io/hypergraph_io_test.cc
+index 9e0c9940..e9ab6a13 100644
+--- a/tests/io/hypergraph_io_test.cc
++++ b/tests/io/hypergraph_io_test.cc
+@@ -375,48 +375,6 @@ TEST_F(AHypergraphReader, ReadsAMetisGraph) {
+   );
+ }
+ 
+-TEST_F(AHypergraphReader, ReadsAMetisGraphNoNewline) {
+-  this->hypergraph = readMetisFile("../tests/instances/graph_no_newline.graph", true);
+-
+-  // Verify Incident Edges
+-  this->verifyIncidentNets(
+-    { { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8, 9 }, { 10, 11, 12, 13 },
+-      { 14, 15, 16 }, { 17, 18, 19 }, { 20, 21 } });
+-
+-  // Verify Pins
+-  this->verifyPins({
+-    { 0, 1 }, { 0, 2 }, { 0, 4 }, { 1, 0 },
+-    { 1, 2 }, { 1, 3 }, { 2, 0 }, { 2, 1 },
+-    { 2, 3 }, { 2, 4 }, { 3, 1 }, { 3, 2 },
+-    { 3, 5 }, { 3, 6 }, { 4, 0 }, { 4, 2 },
+-    { 4, 5 }, { 5, 3 }, { 5, 4 }, { 5, 6 },
+-    { 6, 3 }, { 6, 5 }
+-  });
+-
+-  // Verify Node Weights
+-  ASSERT_EQ(1, this->hypergraph.nodeWeight(0));
+-  ASSERT_EQ(1, this->hypergraph.nodeWeight(1));
+-  ASSERT_EQ(1, this->hypergraph.nodeWeight(2));
+-  ASSERT_EQ(1, this->hypergraph.nodeWeight(3));
+-  ASSERT_EQ(1, this->hypergraph.nodeWeight(4));
+-  ASSERT_EQ(1, this->hypergraph.nodeWeight(5));
+-  ASSERT_EQ(1, this->hypergraph.nodeWeight(6));
+-
+-  // Verify Edge Weights
+-  for ( HyperedgeID e : {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+-            11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21} ) {
+-    ASSERT_EQ(1, this->hypergraph.edgeWeight(e));
+-  }
+-
+-  // Verify IDs
+-  this->verifyIDs({
+-      {0, 3}, {1, 6}, {2, 14}, {4, 7},
+-      {5, 10}, {8, 11}, {9, 15}, {12, 17},
+-      {13, 20}, {16, 18}, {19, 21},
+-    }, 10
+-  );
+-}
+-
+ TEST_F(AHypergraphReader, ReadsAMetisGraphWithNodeWeights) {
+   this->hypergraph = readMetisFile("../tests/instances/graph_with_node_weights.graph", true);
+ 
+diff --git a/tests/partition/preprocessing/louvain_test.cc b/tests/partition/preprocessing/louvain_test.cc
+index 690b1d70..9b60d310 100644
+--- a/tests/partition/preprocessing/louvain_test.cc
++++ b/tests/partition/preprocessing/louvain_test.cc
+@@ -51,7 +51,7 @@ class ALouvain : public ds::HypergraphFixture<Hypergraph, HypergraphFactory> {
+     graph = std::make_unique<Graph>(hypergraph, LouvainEdgeWeight::uniform);
+     karate_club_hg = io::readHypergraphFile(
+       context.partition.graph_filename);
+-    karate_club_graph = std::make_unique<Graph>(karate_club_hg, LouvainEdgeWeight::uniform, true);
++    karate_club_graph = std::make_unique<Graph>(karate_club_hg, LouvainEdgeWeight::uniform);
+   }
+ 
+   using Base::hypergraph;
+@@ -174,7 +174,7 @@ TEST_F(ALouvain, KarateClubTest) {
+   ds::Clustering expected_comm = { 1, 1, 1, 1, 0, 0, 0, 1, 3, 1, 0, 1, 1, 1, 3, 3, 0, 1,
+                                              3, 1, 3, 1, 3, 2, 2, 2, 3, 2, 2, 3, 3, 2, 3, 3 };
+ 
+-  karate_club_graph = std::make_unique<Graph>(karate_club_hg, LouvainEdgeWeight::uniform, true);
++  karate_club_graph = std::make_unique<Graph>(karate_club_hg, LouvainEdgeWeight::uniform);
+   ASSERT_EQ(expected_comm, communities);
+   ASSERT_EQ(metrics::modularity(*karate_club_graph, communities),
+             metrics::modularity(*karate_club_graph, expected_comm));
+diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
+index 5c8d7465..cb4d31c7 100644
+--- a/tools/CMakeLists.txt
++++ b/tools/CMakeLists.txt
+@@ -19,21 +19,6 @@ target_link_libraries(HgrToZoltan ${Boost_LIBRARIES})
+ set_property(TARGET HgrToZoltan PROPERTY CXX_STANDARD 17)
+ set_property(TARGET HgrToZoltan PROPERTY CXX_STANDARD_REQUIRED ON)
+ 
+-add_executable(HypergraphStats hypergraph_stats.cc)
+-target_link_libraries(HypergraphStats ${Boost_LIBRARIES})
+-set_property(TARGET HypergraphStats PROPERTY CXX_STANDARD 17)
+-set_property(TARGET HypergraphStats PROPERTY CXX_STANDARD_REQUIRED ON)
+-
+-add_executable(MetisToScotch metis_to_scotch_converter.cc)
+-target_link_libraries(MetisToScotch ${Boost_LIBRARIES})
+-set_property(TARGET MetisToScotch PROPERTY CXX_STANDARD 17)
+-set_property(TARGET MetisToScotch PROPERTY CXX_STANDARD_REQUIRED ON)
+-
+-add_executable(SnapToMetis snap_to_metis_converter.cc)
+-target_link_libraries(SnapToMetis ${Boost_LIBRARIES})
+-set_property(TARGET SnapToMetis PROPERTY CXX_STANDARD 17)
+-set_property(TARGET SnapToMetis PROPERTY CXX_STANDARD_REQUIRED ON)
+-
+ add_executable(EvaluateBipart evaluate_bipart_partition.cc)
+ target_link_libraries(EvaluateBipart ${Boost_LIBRARIES})
+ set_property(TARGET EvaluateBipart PROPERTY CXX_STANDARD 17)
+@@ -53,4 +38,4 @@ add_executable(BenchShuffle bench_deterministic_shuffling.cpp bench_deterministi
+ set_property(TARGET BenchShuffle PROPERTY CXX_STANDARD 17)
+ set_property(TARGET BenchShuffle PROPERTY CXX_STANDARD_REQUIRED ON)
+ 
+-set(TARGETS_WANTING_ALL_SOURCES ${TARGETS_WANTING_ALL_SOURCES} EvaluateBipart EvaluatePartition VerifyPartition HgrToZoltan HypergraphStats MetisToScotch SnapToMetis GraphToHgr HgrToParkway SnapGraphToHgr PARENT_SCOPE)
++set(TARGETS_WANTING_ALL_SOURCES ${TARGETS_WANTING_ALL_SOURCES} EvaluateBipart EvaluatePartition VerifyPartition HgrToZoltan GraphToHgr HgrToParkway SnapGraphToHgr PARENT_SCOPE)

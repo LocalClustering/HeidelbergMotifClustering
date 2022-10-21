@@ -1,0 +1,3 @@
+[submodule "full_algorithms/extern/mt-kahypar_new"]
+	path = full_algorithms/extern/mt-kahypar_new
+	url = https://github.com/kahypar/mt-kahypar.git
