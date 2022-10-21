@@ -1,3 +1,6 @@
 [submodule "full_algorithms/extern/mt-kahypar"]
 	path = full_algorithms/extern/mt-kahypar
 	url = https://github.com/kahypar/mt-kahypar.git
+[submodule "full_algorithms/extern/kahypar"]
+	path = full_algorithms/extern/kahypar
+	url = https://github.com/kahypar/kahypar.git
