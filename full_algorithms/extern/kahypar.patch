@@ -1,0 +1,457 @@
+diff --git a/README.md b/README.md
+index d1934a3c..c6bfd726 100644
+--- a/README.md
++++ b/README.md
+@@ -155,7 +155,7 @@ The Karlsruhe Hypergraph Partitioning Framework requires:
+  - A 64-bit operating system. Linux, Mac OS X and Windows are currently supported.
+  - A modern, ![C++14](https://img.shields.io/badge/C++-17-blue.svg?style=flat)-ready compiler such as `g++` version 9 or higher or `clang` version 11.0.3 or higher.
+  - The [cmake][cmake] build system.
+- - The [Boost.Program_options][Boost.Program_options] library and the boost header files. If you don't want to install boost yourself, you can add the `-DKAHYPAR_USE_MINIMAL_BOOST=ON` flag to the cmake command to download, extract, and build the necessary dependencies automatically.
++ - The [Boost.Program_options][Boost.Program_options] library and the boost header files.
+ 
+ 
+ Building KaHyPar
+@@ -327,7 +327,7 @@ make uninstall-kahypar
+ To compile the Python interface, do the following:
+ 
+ 1. Create a build directory: `mkdir build && cd build`
+-2. If you have boost installed on your system, run cmake: `cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DKAHYPAR_PYTHON_INTERFACE=1`. If you don't have boost installed, run: `cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DKAHYPAR_PYTHON_INTERFACE=1 -DKAHYPAR_USE_MINIMAL_BOOST=ON` instead. This will download, extract, and build the necessary dependencies automatically.
++2. Run cmake: `cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DKAHYPAR_PYTHON_INTERFACE=1`
+ 3. Go to libary folder: `cd python`
+ 4. Compile the libarary: `make`
+ 5. Copy the libary to your site-packages directory: `cp kahypar.so <path-to-site-packages>`
+@@ -414,108 +414,7 @@ For more information see the [COPYING file][CF].
+ We distribute this framework freely to foster the use and development of hypergraph partitioning tools.
+ If you use KaHyPar in an academic setting please cite the appropriate papers. If you are interested in a commercial license, please contact me.
+ 
+-    // Overall KaHyPar framework
+-    @phdthesis{DBLP:phd/dnb/Schlag20,
+-      author    = {Sebastian Schlag},
+-      title     = {High-Quality Hypergraph Partitioning},
+-      school    = {Karlsruhe Institute of Technology, Germany},
+-      year      = {2020}
+-    }
+-    
+-    @article{10.1145/3529090, 
+-      author = {Schlag, Sebastian and 
+-                Heuer, Tobias and 
+-                Gottesb\"{u}ren, Lars and 
+-                Akhremtsev, Yaroslav and 
+-                Schulz, Christian and 
+-                Sanders, Peter}, 
+-      title = {High-Quality Hypergraph Partitioning}, 
+-      url = {https://doi.org/10.1145/3529090}, 
+-      doi = {10.1145/3529090}, 
+-      journal = {ACM J. Exp. Algorithmics},
+-      year = {2022}, 
+-      month = {mar}
+-    }
+-
+-    // KaHyPar-R
+-    @inproceedings{shhmss2016alenex,
+-     author    = {Sebastian Schlag and
+-                  Vitali Henne and
+-                  Tobias Heuer and
+-                  Henning Meyerhenke and
+-                  Peter Sanders and
+-                  Christian Schulz},
+-     title     = {k-way Hypergraph Partitioning via \emph{n}-Level Recursive
+-                  Bisection},
+-     booktitle = {18th Workshop on Algorithm Engineering and Experiments, (ALENEX 2016)},
+-     pages     = {53--67},
+-     year      = {2016},
+-    }
+-
+-    // KaHyPar-K
+-    @inproceedings{ahss2017alenex,
+-     author    = {Yaroslav Akhremtsev and
+-                  Tobias Heuer and
+-                  Peter Sanders and
+-                  Sebastian Schlag},
+-     title     = {Engineering a direct \emph{k}-way Hypergraph Partitioning Algorithm},
+-     booktitle = {19th Workshop on Algorithm Engineering and Experiments, (ALENEX 2017)},
+-     pages     = {28--42},
+-     year      = {2017},
+-    }
+-
+-    // KaHyPar-CA
+-    @inproceedings{hs2017sea,
+-     author    = {Tobias Heuer and
+-                  Sebastian Schlag},
+-     title     = {Improving Coarsening Schemes for Hypergraph Partitioning by Exploiting Community Structure},
+-     booktitle = {16th International Symposium on Experimental Algorithms, (SEA 2017)},
+-     pages     = {21:1--21:19},
+-     year      = {2017},
+-    }
+-
+-    // KaHyPar-MF
+-    @inproceedings{heuer_et_al:LIPIcs:2018:8936,
+-     author ={Tobias Heuer and Peter Sanders and Sebastian Schlag},
+-     title ={{Network Flow-Based Refinement for Multilevel Hypergraph Partitioning}},
+-     booktitle ={17th International Symposium on Experimental Algorithms  (SEA 2018)},
+-     pages ={1:1--1:19},
+-     year ={2018}
+-    }
+-
+-
+-    @article{KaHyPar-MF-JEA,
+-      author = {Heuer, T. and Sanders, P. and Schlag, S.},
+-      title = {Network Flow-Based Refinement for Multilevel Hypergraph Partitioning},
+-      journal = {ACM Journal of Experimental Algorithmics (JEA)}},
+-      volume = {24},
+-      number = {1},
+-      month = {09},
+-      year = {2019},
+-      pages = {2.3:1--2.3:36},
+-      publisher = {ACM}
+-    }
+-
+-    // KaHyPar-E (EvoHGP)
+-    @inproceedings{Andre:2018:MMH:3205455.3205475,
+-     author = {Robin Andre and Sebastian Schlag and Christian Schulz},
+-     title = {Memetic Multilevel Hypergraph Partitioning},
+-     booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference},
+-     series = {GECCO '18},
+-     year = {2018},
+-     pages = {347--354},
+-     numpages = {8}
+-    }
+-
+-    // KaHyPar-SEA20 (KaHyPar-HFC)
+-    @InProceedings{gottesbren_et_al:LIPIcs:2020:12085,
+-  	author = {Lars Gottesb{\"u}ren and Michael Hamann and Sebastian Schlag and Dorothea Wagner},
+-  	title =	{{Advanced Flow-Based Multilevel Hypergraph Partitioning}},
+-  	booktitle = {18th International Symposium on Experimental Algorithms (SEA)},
+-  	pages =	{11:1--11:15},
+-  	series = {Leibniz International Proceedings in Informatics (LIPIcs)},
+-  	year =	{2020}
+-    }
++
+ 
+ Contributing
+ ------------
+diff --git a/include/libkahypar.h b/include/libkahypar.h
+index 4a5b41e7..5bc81a13 100644
+--- a/include/libkahypar.h
++++ b/include/libkahypar.h
+@@ -22,6 +22,7 @@
+ #define LIBKAHYPAR_H
+ 
+ #include <stddef.h>
++#include <vector>
+ 
+ #ifdef __cplusplus
+ extern "C" {
+@@ -119,6 +120,21 @@ KAHYPAR_API void kahypar_partition(const kahypar_hypernode_id_t num_vertices,
+                                    kahypar_context_t* kahypar_context,
+                                    kahypar_partition_id_t* partition);
+ 
++KAHYPAR_API void kahypar_partition_MC(const kahypar_hypernode_id_t num_vertices,
++                                   const kahypar_hyperedge_id_t num_hyperedges,
++                                   const double epsilon,
++                                   const kahypar_partition_id_t num_blocks,
++                                   const kahypar_hypernode_weight_t* vertex_weights,
++                                   const kahypar_hyperedge_weight_t* hyperedge_weights,
++                                   const size_t* hyperedge_indices,
++                                   const kahypar_hyperedge_id_t* hyperedges,
++                                   kahypar_hyperedge_weight_t* objective,
++                                   //double* motif_conductance,
++                                   kahypar_context_t* kahypar_context,
++                                   kahypar_partition_id_t* partition,
++                                   bool noMotif,
++                                   //std::vector<int> &hypernode_degrees,
++                                   bool fixNodes);
+ 
+ KAHYPAR_API void kahypar_improve_partition(const kahypar_hypernode_id_t num_vertices,
+                                            const kahypar_hyperedge_id_t num_hyperedges,
+diff --git a/kahypar/datastructure/binary_heap.h b/kahypar/datastructure/binary_heap.h
+index 146306d7..6d18c00b 100644
+--- a/kahypar/datastructure/binary_heap.h
++++ b/kahypar/datastructure/binary_heap.h
+@@ -416,7 +416,7 @@ class BinaryHeapTraits<BinaryMinHeap<IDType_, KeyType_> >{
+   using Comparator = std::greater<KeyType>;
+ 
+   static constexpr KeyType sentinel() {
+-    return std::numeric_limits<KeyType_>::lowest();
++    return std::numeric_limits<KeyType_>::min();
+   }
+ };
+ }  // namespace ds
+diff --git a/kahypar/datastructure/hypergraph.h b/kahypar/datastructure/hypergraph.h
+index dfa55eaf..a32e69ff 100644
+--- a/kahypar/datastructure/hypergraph.h
++++ b/kahypar/datastructure/hypergraph.h
+@@ -62,8 +62,7 @@ Iterator end(const std::pair<Iterator, Iterator>& x) {
+ /*!
+  * The hypergraph data structure as described in
+  * ,,k-way Hypergraph Partitioning via n-Level Recursive Bisection''
+- * Sebastian Schlag, Vitali Henne, Tobias Heuer, Henning Meyerhenke, Peter Sanders,
+- * and Christian Schulz, 2016 Proceedings of the Eighteenth Workshop on Algorithm Engineering
++ *  2016 Proceedings of the Eighteenth Workshop on Algorithm Engineering
+  * and Experiments (ALENEX), 2016, 53-67
+  *
+  * \par Definition:
+diff --git a/kahypar/io/hypergraph_io.h b/kahypar/io/hypergraph_io.h
+index d8775874..9bdb6fe6 100644
+--- a/kahypar/io/hypergraph_io.h
++++ b/kahypar/io/hypergraph_io.h
+@@ -27,9 +27,7 @@
+ #include <sstream>
+ #include <string>
+ #include <unordered_map>
+-#include <unordered_set>
+ #include <vector>
+-#include <cstdlib>
+ 
+ #include "kahypar/definitions.h"
+ 
+@@ -81,7 +79,6 @@ static inline void readHypergraphFile(const std::string& filename, HypernodeID&
+     index_vector.push_back(edge_vector.size());
+ 
+     std::string line;
+-    std::unordered_set<HypernodeID> unique_pins;
+     for (HyperedgeID i = 0; i < num_hyperedges; ++i) {
+       std::getline(file, line);
+       // skip any comments
+@@ -106,16 +103,10 @@ static inline void readHypergraphFile(const std::string& filename, HypernodeID&
+         }
+       }
+       HypernodeID pin;
+-      unique_pins.clear();
+       while (line_stream >> pin) {
+         // Hypernode IDs start from 0
+         --pin;
+         ASSERT(pin < num_hypernodes, "Invalid hypernode ID");
+-        if (unique_pins.count(pin)) {
+-          std::cerr << "Warning: Ignoring duplicate pin " << pin << " of hyperedge " << i << std::endl;
+-          continue;
+-        }
+-        unique_pins.insert(pin);
+         edge_vector.push_back(pin);
+       }
+       index_vector.push_back(edge_vector.size());
+diff --git a/kahypar/partition/context.h b/kahypar/partition/context.h
+index 21433470..4154364c 100644
+--- a/kahypar/partition/context.h
++++ b/kahypar/partition/context.h
+@@ -311,8 +311,10 @@ struct PartitioningParameters {
+   uint32_t global_search_iterations = std::numeric_limits<uint32_t>::max();
+ 
+   bool time_limited_repeated_partitioning = false;
+-  int time_limit = -1;
+-  int soft_time_limit_check_frequency = 10000;
++  int time_limit = -1; 
++  //int time_limit = 10;
++  int soft_time_limit_check_frequency = 10000; 
++  //int soft_time_limit_check_frequency = 10;
+   double soft_time_limit_factor = 0.99;
+   HighResClockTimepoint start_time;
+   mutable bool time_limit_triggered = false;
+diff --git a/kahypar/partition/metrics.h b/kahypar/partition/metrics.h
+index 819567a1..4e1eed54 100644
+--- a/kahypar/partition/metrics.h
++++ b/kahypar/partition/metrics.h
+@@ -280,5 +280,39 @@ static inline void connectivityStats(const Hypergraph& hypergraph,
+     ++connectivity_stats[hypergraph.connectivity(he)];
+   }
+ }
++
++static inline double motif_conductance(const Hypergraph& hypergraph, std::vector<int> &hypernode_degrees) {
++  //HyperedgeWeight cut;
++  //cut = hyperedgeCut(hypergraph);
++  HyperedgeWeight cut = 0;
++  std::vector<bool> blockFound(2);
++
++  for (const HyperedgeID& he : hypergraph.edges()) {
++    for (const HypernodeID& pin : hypergraph.pins(he)) {
++        blockFound[hypergraph.partID(pin)] = true;
++    }
++    if(blockFound[0] && blockFound[1]) {
++      cut += hypergraph.edgeWeight(he); 
++    }
++    blockFound[0] = false;
++    blockFound[1] = false;
++  }
++
++  std::vector<HyperedgeID> volumes(2,0);
++  for (HypernodeID u : hypergraph.nodes()) {
++    volumes[hypergraph.partID(u)] += hypernode_degrees[u];
++  }
++
++  HypernodeID lastNode = hypernode_degrees.size()-1;
++  int oppositeBlock = hypergraph.partID(lastNode); //partID corresponding to contracted node
++  int clusterBlock = 1 - oppositeBlock; //partID corresponding to detected cluster
++
++  HyperedgeID min_volume;
++  
++  min_volume = volumes[clusterBlock];
++
++  return ((1.0*(cut))/(1.0*min_volume));
++}
++
+ }  // namespace metrics
+ }  // namespace kahypar
+diff --git a/lib/libkahypar.cc b/lib/libkahypar.cc
+index 7c0a97d6..56ea9a46 100644
+--- a/lib/libkahypar.cc
++++ b/lib/libkahypar.cc
+@@ -254,6 +254,92 @@ void kahypar_partition(const kahypar_hypernode_id_t num_vertices,
+   context.evolutionary.communities.clear();
+ }
+ 
++void kahypar_partition_MC(const kahypar_hypernode_id_t num_vertices,
++                       const kahypar_hyperedge_id_t num_hyperedges,
++                       const double epsilon,
++                       const kahypar_partition_id_t num_blocks,
++                       const kahypar_hypernode_weight_t* vertex_weights,
++                       const kahypar_hyperedge_weight_t* hyperedge_weights,
++                       const size_t* hyperedge_indices,
++                       const kahypar_hyperedge_id_t* hyperedges,
++                       kahypar_hyperedge_weight_t* objective,
++                       //double* motif_conductance,
++                       kahypar_context_t* kahypar_context,
++                       kahypar_partition_id_t* partition,
++                       bool noMotif,
++                       //std::vector<int> &hypernode_degrees,
++                       bool fixNodes) {
++  kahypar::Context& context = *reinterpret_cast<kahypar::Context*>(kahypar_context);
++  ASSERT(!context.partition.use_individual_part_weights ||
++         !context.partition.max_part_weights.empty());
++  ASSERT(partition != nullptr);
++
++  context.partition.k = num_blocks;
++  context.partition.epsilon = epsilon;
++  context.partition.write_partition_file = false;
++  context.partition.quiet_mode = true;
++
++  if((noMotif == false) && (fixNodes==true)){
++    kahypar_hypergraph_t* kahypar_hypergraph = kahypar_create_hypergraph(context.partition.k,
++                                                                       num_vertices,
++                                                                       num_hyperedges,
++                                                                       hyperedge_indices,
++                                                                       hyperedges,
++                                                                       hyperedge_weights,
++                                                                       vertex_weights);
++    std::unique_ptr<kahypar_partition_id_t[]> fixed_vertices = std::make_unique<kahypar_partition_id_t[]>(num_vertices);
++    for(int i = 0; i < num_vertices; i++) {
++      fixed_vertices[i] = -1;
++    }
++    fixed_vertices[0] = 0;
++    fixed_vertices[num_vertices - 1] = 1;
++    kahypar_set_fixed_vertices(kahypar_hypergraph, fixed_vertices.get());
++    kahypar::Hypergraph& hypergraph = *reinterpret_cast<kahypar::Hypergraph*>(kahypar_hypergraph);
++    if (context.partition.vcycle_refinement_for_input_partition) {
++      for (const auto hn : hypergraph.nodes()) {
++        hypergraph.setNodePart(hn, partition[hn]);
++      }
++    }
++    kahypar::PartitionerFacade().partition(hypergraph, context);
++    *objective = kahypar::metrics::correctMetric(hypergraph, context);
++    //motif_conductance = kahypar::metrics::motif_conductance(hypergraph, hypernode_degrees);
++
++    for (const auto hn : hypergraph.nodes()) {
++      partition[hn] = hypergraph.partID(hn);
++    }
++  }
++  else{
++    kahypar::Hypergraph hypergraph(num_vertices,
++                                 num_hyperedges,
++                                 hyperedge_indices,
++                                 hyperedges,
++                                 context.partition.k,
++                                 hyperedge_weights,
++                                 vertex_weights);
++    if (context.partition.vcycle_refinement_for_input_partition) {
++      for (const auto hn : hypergraph.nodes()) {
++        hypergraph.setNodePart(hn, partition[hn]);
++      }
++    }
++    kahypar::PartitionerFacade().partition(hypergraph, context);
++    if(noMotif == false && fixNodes == false) {
++      if(hypergraph.partID(0) == hypergraph.partID(num_vertices-1)){
++        hypergraph.changeNodePart(0, hypergraph.partID(0), 1-hypergraph.partID(num_vertices-1));
++      }
++    }
++    *objective = kahypar::metrics::correctMetric(hypergraph, context);
++    //*motif_conductance = kahypar::metrics::motif_conductance(hypergraph, hypernode_degrees);
++
++    for (const auto hn : hypergraph.nodes()) {
++      partition[hn] = hypergraph.partID(hn);
++    }
++  }
++
++  context.partition.perfect_balance_part_weights.clear();
++  context.partition.max_part_weights.clear();
++  context.evolutionary.communities.clear();
++}
++
+ 
+ void kahypar_improve_partition(const kahypar_hypernode_id_t num_vertices,
+                                const kahypar_hyperedge_id_t num_hyperedges,
+diff --git a/scripts/python_wheels/build_macos_locally.sh b/scripts/python_wheels/build_macos_locally.sh
+index c8b5a8c7..4c519c10 100644
+--- a/scripts/python_wheels/build_macos_locally.sh
++++ b/scripts/python_wheels/build_macos_locally.sh
+@@ -4,9 +4,6 @@ python3 -m pip install cibuildwheel==1.4.1
+ # python2.7 does not work well with C++17
+ export CIBW_SKIP=cp27-macosx_x86_64
+ 
+-# make sure we use the packaged minimal boost implementation, as cibuildwheel doesn't seem to properly handle the boost dependency.
+-export KAHYPAR_USE_MINIMAL_BOOST=ON
+-
+ # create wheels
+ python3 -m cibuildwheel --output-dir wheelhouse --platform macos
+ 
+diff --git a/setup.py b/setup.py
+index abcbe1c3..08f68077 100644
+--- a/setup.py
++++ b/setup.py
+@@ -35,8 +35,7 @@ class CMakeBuild(build_ext):
+         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
+         cmake_args = ['-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=' + extdir,
+                       '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
+-                      '-DPYTHON_EXECUTABLE=' + sys.executable,
+-                      '-DKAHYPAR_PYTHON_INTERFACE=ON']
++                      '-DPYTHON_EXECUTABLE=' + sys.executable]
+ 
+         cfg = 'Debug' if self.debug else 'Release'
+         build_args = ['--config', cfg]
+@@ -54,11 +53,6 @@ class CMakeBuild(build_ext):
+         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(
+             env.get('CXXFLAGS', ''), self.distribution.get_version())
+ 
+-        if env.get('KAHYPAR_USE_MINIMAL_BOOST', 'OFF').upper() == 'ON':
+-            cmake_args += ['-DKAHYPAR_PYTHON_INTERFACE=ON', 
+-                           '-DKAHYPAR_USE_MINIMAL_BOOST=ON']
+-            env['CXXFLAGS'] += ' -fPIC'
+-
+         if not os.path.exists(self.build_temp):
+             os.makedirs(self.build_temp)
+         subprocess.check_call(
+@@ -79,7 +73,7 @@ with codecs.open('README.md', "r", encoding='utf-8') as fh:
+ if __name__ == '__main__':
+     setup(
+         name='kahypar',
+-        version='1.1.7',
++        version='1.1.6',
+         description='Python Inferface for the Karlsruhe Hypergraph Partitioning Framework (KaHyPar)',
+         long_description=long_description,
+         long_description_content_type="text/markdown",
+diff --git a/tests/io/hypergraph_io_test.cc b/tests/io/hypergraph_io_test.cc
+index 68e3890d..2fd47f76 100644
+--- a/tests/io/hypergraph_io_test.cc
++++ b/tests/io/hypergraph_io_test.cc
+@@ -248,13 +248,5 @@ TEST(AHypergraphDeathTest, WithEmptyHyperedgesLeadsToProgramExit) {
+               ::testing::ExitedWithCode(1),
+               "Error: Hyperedge 1 is empty");
+ }
+-
+-TEST(DuplicatePins, GetRemovedDuringParsing) {
+-  Hypergraph const hypergraph = createHypergraphFromFile("test_instances/corrupted_hypergraph_with_multiple_identical_pins.hgr", 2);
+-  ASSERT_THAT(hypergraph.initialNumNodes(), Eq(3));
+-  ASSERT_THAT(hypergraph.initialNumEdges(), Eq(2));
+-  ASSERT_THAT(hypergraph.initialNumPins(), Eq(4));
+-}
+-
+ }  // namespace io
+ }  // namespace kahypar
