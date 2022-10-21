@@ -1,4 +1,5 @@
 # Local Motif Clustering via (Hyper)Graph Partitioning [![Codacy Badge](https://app.codacy.com/project/badge/Grade/49051692992840f8aee01dc12ab2b568)](https://www.codacy.com/gh/LocalClustering/Local-Motif-Clustering-via-Hyper-Graph-Partitioning/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=LocalClustering/Local-Motif-Clustering-via-Hyper-Graph-Partitioning&amp;utm_campaign=Badge_Grade)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLocalClustering%2FHeidelbergMotifClustering.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FLocalClustering%2FHeidelbergMotifClustering?ref=badge_shield)
 
 A widely-used operation on graphs is local clustering, i.e., extracting a well-characterized community around a seed node without the need to process the whole graph.  Recently local motif clustering has been proposed: it looks for a local cluster based on the distribution of motifs.  Since this local clustering perspective is relatively new, most approaches proposed for it are extensions of statistical and numerical methods previously used for edge-based local clustering, while the available combinatorial approaches are still few and relatively simple.  In this work, we build a hypergraph and a graph model which both represent the motif-distribution around the seed node. We solve these models using  sophisticated combinatorial algorithms designed for (hyper)graph partitioning.  In extensive experiments with the triangle motif, we observe that our algorithm computes communities with a motif conductance value being one third on average in comparison against the communities computed by the state-of-the-art tool MAPPR while being 6.3 times faster on average.
 
@@ -98,3 +99,7 @@ Plotting Full Charts (full_plotting/)
 
 Enter the folder full_plotting/ and follow the instructions contained in README
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FLocalClustering%2FHeidelbergMotifClustering.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FLocalClustering%2FHeidelbergMotifClustering?ref=badge_large)
