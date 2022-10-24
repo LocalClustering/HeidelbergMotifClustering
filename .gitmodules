@@ -10,3 +10,6 @@
 [submodule "full_algorithms/extern/KaMinPar"]
 	path = full_algorithms/extern/KaMinPar
 	url = https://github.com/KaHIP/KaMinPar.git
+[submodule "algorithms/extern/snap"]
+	path = algorithms/extern/snap
+	url = https://github.com/snap-stanford/snap.git
