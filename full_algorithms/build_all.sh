@@ -33,7 +33,7 @@ cp extern/snap/examples/localmotifcluster/localmotifclustermain deploy/mappr
 
 ########### CLEANING ###########
 
-# Apply patches on external modules
+# Remove patches from external modules
 for i in snap mt-kahypar kahypar KaMinPar
 do
 	cd extern/$i;
