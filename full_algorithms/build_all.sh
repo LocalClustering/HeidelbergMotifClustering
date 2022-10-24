@@ -12,12 +12,6 @@ done
 
 ########### COMPILING ###########
 
-# Compile MAPPR
-cd extern/snap/examples/localmotifcluster/
-make
-cd -;
-cp extern/snap/examples/localmotifcluster/localmotifclustermain deploy/mappr
-
 # Compile (mt-)KaHyPar and KaMinPar (our algorithm used their libraries)
 for i in mt-kahypar kahypar KaMinPar
 do
@@ -29,6 +23,12 @@ done
 
 # Compile our algorithm
 ./compile.sh;
+
+# Compile MAPPR
+cd extern/snap/examples/localmotifcluster/
+make
+cd -;
+cp extern/snap/examples/localmotifcluster/localmotifclustermain deploy/mappr
 
 
 ########### CLEANING ###########
