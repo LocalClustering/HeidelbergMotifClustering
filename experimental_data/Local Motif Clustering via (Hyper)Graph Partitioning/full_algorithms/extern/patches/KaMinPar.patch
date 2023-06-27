@@ -28,38 +28,6 @@ index fdf9f99..29469fd 100644
 -add_subdirectory(library)
 \ No newline at end of file
 +add_subdirectory(library)
-diff --git a/README.MD b/README.MD
-index 65264f7..67dca47 100644
---- a/README.MD
-+++ b/README.MD
-@@ -79,26 +79,3 @@ Then, simply link against our library (together with `libtbb` and `libtbbmalloc`
- ## Licensing
- 
- KaMinPar is free software provided under the GNU General Public License (GPLv3).
--If you publish results using our algorithms, please acknowledge our work by citing the following paper ([pdf](http://algo2.iti.kit.edu/seemaier/deep_mgp/)):
--
--```
--@inproceedings{DBLP:conf/esa/GottesburenH00S21,
--  author    = {Lars Gottesb{\"{u}}ren and
--               Tobias Heuer and
--               Peter Sanders and
--               Christian Schulz and
--               Daniel Seemaier},
--  title     = {Deep Multilevel Graph Partitioning},
--  booktitle = {29th Annual European Symposium on Algorithms, {ESA} 2021, September
--               6-8, 2021, Lisbon, Portugal (Virtual Conference)},
--  series    = {LIPIcs},
--  volume    = {204},
--  pages     = {48:1--48:17},
--  publisher = {Schloss Dagstuhl - Leibniz-Zentrum f{\"{u}}r Informatik},
--  year      = {2021},
--  url       = {https://doi.org/10.4230/LIPIcs.ESA.2021.48},
--  doi       = {10.4230/LIPIcs.ESA.2021.48}
--}
--```
--
--Detailed experimental results published in our paper are available [here](http://algo2.iti.kit.edu/seemaier/deep_mgp/).
-\ No newline at end of file
 diff --git a/apps/apps.h b/apps/apps.h
 index 18fea97..4655891 100644
 --- a/apps/apps.h
