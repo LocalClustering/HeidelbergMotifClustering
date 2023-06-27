@@ -1,5 +1,0 @@
-add_subdirectory(preprocessing)
-add_subdirectory(coarsening)
-add_subdirectory(initial_partitioning)
-add_subdirectory(refinement)
-add_subdirectory(determinism)
