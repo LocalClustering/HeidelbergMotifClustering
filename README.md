@@ -88,7 +88,3 @@ Running
 
 For running the algorithms, see instructions in the respective folders
 
-```console
-./run_sample.sh
-```
-
