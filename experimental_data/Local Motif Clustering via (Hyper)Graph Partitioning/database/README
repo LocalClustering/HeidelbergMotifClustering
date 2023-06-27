@@ -1,0 +1,5 @@
+## This folder contains the following file formats:
+com-dblp		-	com-dblp graph in MAPPR format
+com-dblp.graph		-	com-dblp graph in METIS format (the one used by our algorithm)
+com-dblp.map		-	node mapping from com-dblp.graph to com-dblp (line i contains the MAPPR label of the node whose METIS label is i)
+com-dblp.triangles	-	total triangle count of the entire graph com-dblp

@@ -1,0 +1,8 @@
+## This folder contains all experimental comparisons of our algorithms against the state-of-the-art
+## Each line of the files results.txt and times.txt shows the result of a specific experiment
+
+## The files results.txt have the following columns
+index seed_node seed graph algorithm motif_conductance cluster_size
+
+## The files times.txt have the following columns
+index seed_node seed graph algorithm total_clustering_time time_spent_on_enumeration

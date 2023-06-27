@@ -1,15 +1,18 @@
-[submodule "full_algorithms/extern/mt-kahypar"]
-	path = full_algorithms/extern/mt-kahypar
+[submodule "experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/full_algorithms/extern/mt-kahypar"]
+	path = experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/full_algorithms/extern/mt-kahypar
 	url = https://github.com/kahypar/mt-kahypar.git
-[submodule "full_algorithms/extern/kahypar"]
-	path = full_algorithms/extern/kahypar
+[submodule "experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/full_algorithms/extern/kahypar"]
+	path = experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/full_algorithms/extern/kahypar
 	url = https://github.com/kahypar/kahypar.git
-[submodule "full_algorithms/extern/snap"]
-	path = full_algorithms/extern/snap
+[submodule "experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/full_algorithms/extern/snap"]
+	path = experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/full_algorithms/extern/snap
 	url = https://github.com/snap-stanford/snap.git
-[submodule "full_algorithms/extern/KaMinPar"]
-	path = full_algorithms/extern/KaMinPar
+[submodule "experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/full_algorithms/extern/KaMinPar"]
+	path = experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/full_algorithms/extern/KaMinPar
 	url = https://github.com/KaHIP/KaMinPar.git
-[submodule "algorithms/extern/snap"]
-	path = algorithms/extern/snap
+[submodule "experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/algorithms/extern/snap"]
+	path = experimental_data/Local Motif Clustering via (Hyper)Graph Partitioning/algorithms/extern/snap
+	url = https://github.com/snap-stanford/snap.git
+[submodule "experimental_data/Faster Local Motif Clustering via Maximum Flows/algorithms/MAPPR"]
+	path = experimental_data/Faster Local Motif Clustering via Maximum Flows/algorithms/MAPPR
 	url = https://github.com/snap-stanford/snap.git

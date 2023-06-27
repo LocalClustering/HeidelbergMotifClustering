@@ -1,0 +1,214 @@
+diff --git a/examples/localmotifcluster/localmotifclustermain.cpp b/examples/localmotifcluster/localmotifclustermain.cpp
+index 0069b9f..348f604 100644
+--- a/examples/localmotifcluster/localmotifclustermain.cpp
++++ b/examples/localmotifcluster/localmotifclustermain.cpp
+@@ -2,6 +2,7 @@
+ //
+ #include "stdafx.h"
+ #include "localmotifcluster.h"
++#include<iostream>
+ 
+ int main(int argc, char* argv[]) {
+   Env = TEnv(argc, argv, TNotify::StdNotify);
+@@ -10,7 +11,9 @@ int main(int argc, char* argv[]) {
+   TExeTm ExeTm;  
+   Try
+ 
+-  const bool IsDirected = 
++    std::string io_time;
++    std::string enum_time;
++    const bool IsDirected = 
+     Env.GetIfArgPrefixBool("-d:", false, "Directed graph?");
+ 
+   ProcessedGraph graph_p;
+@@ -30,7 +33,12 @@ int main(int argc, char* argv[]) {
+       graph = TSnap::LoadEdgeList<PNGraph>(graph_filename, 0, 1);
+     }
+     TSnap::DelSelfEdges(graph);
++    io_time = std::string(ExeTm.GetTmStr()); 
++
++    ExeTm = TExeTm();
++    TExeTm ExeTmEnumeration;  
+     graph_p = ProcessedGraph(graph, mt);
++    enum_time = std::string(ExeTmEnumeration.GetTmStr()); 
+ 
+   } else {
+ 
+@@ -49,7 +57,12 @@ int main(int argc, char* argv[]) {
+       graph = TSnap::LoadEdgeList<PUNGraph>(graph_filename, 0, 1);
+     }
+     TSnap::DelSelfEdges(graph);
++    io_time = std::string(ExeTm.GetTmStr()); 
++
++    ExeTm = TExeTm();
++    TExeTm ExeTmEnumeration;  
+     graph_p = ProcessedGraph(graph, mt);
++    enum_time = std::string(ExeTmEnumeration.GetTmStr()); 
+   }
+ 
+   const TInt seed =
+@@ -58,19 +71,30 @@ int main(int argc, char* argv[]) {
+     Env.GetIfArgPrefixFlt("-a:", 0.98, "alpha");
+   const TFlt eps =
+     Env.GetIfArgPrefixFlt("-e:", 0.0001, "eps");
++  const bool write_community =
++    Env.GetIfArgPrefixBool("-w:", false, "write_community");
++  const TStr filename =
++    Env.GetIfArgPrefixStr("-o:", "community", "filename");
++  const TStr map_filename =
++    Env.GetIfArgPrefixStr("-M:", "", "map from metis format to edge-list");
+ 
+ 
++  printf("\nio time: %s\n", io_time.c_str());
++  printf("Total Enumeration Time = %s\n", enum_time.c_str());
+   MAPPR mappr;
+   mappr.computeAPPR(graph_p, seed, alpha, eps / graph_p.getTotalVolume() * graph_p.getTransformedGraph()->GetNodes());
+-  mappr.sweepAPPR(-1);
+-  mappr.printProfile();
+-  printf("Size of Cluster: %d.\n", mappr.getCluster().Len());
+-
+-
++  mappr.sweepAPPR(0); // the parameter 0 indicates that you get the global optimum cluster
++  printf("Total Clustering Time: %s\n", ExeTm.GetTmStr());
++  if (write_community) {
++	  /* mappr.printProfile(); */
++	  mappr.writeCommunity(filename, map_filename);
++  }
++  mappr.printConductance();
++  printf("Size of cluster: %d\n", mappr.getCluster().Len());
+ 
+   
+   Catch
+-  printf("\nrun time: %s (%s)\n", ExeTm.GetTmStr(),
+-   TSecTm::GetCurTm().GetTmStr().CStr());
++  /* printf("\nrun time: %s (%s)\n", ExeTm.GetTmStr(), */
++  /*  TSecTm::GetCurTm().GetTmStr().CStr()); */
+   return 0;
+ }
+diff --git a/glib-core/tm.h b/glib-core/tm.h
+index 816135e..1f8c318 100644
+--- a/glib-core/tm.h
++++ b/glib-core/tm.h
+@@ -368,9 +368,11 @@ public:
+   const char* GetStr() const {return GetTmStr();}
+   TStr GetStr2() const {return GetTmStr();}
+   const char* GetTmStr() const { static char TmStr[32];
+-    if (GetSecs() < 60) { sprintf(TmStr, "%.2fs", GetSecs()); }
+-    else if (GetSecs() < 3600) { sprintf(TmStr, "%02dm%02ds", int(GetSecs())/60, int(GetSecs())%60); }
+-    else { sprintf(TmStr, "%02dh%02dm", int(GetSecs())/3600, (int(GetSecs())%3600)/60); }  return TmStr; }
++    sprintf(TmStr, "%.4f", GetSecs()); 
++    /* if (GetSecs() < 60) { sprintf(TmStr, "%.2fs", GetSecs()); } */
++    /* else if (GetSecs() < 3600) { sprintf(TmStr, "%02dm%02ds", int(GetSecs())/60, int(GetSecs())%60); } */
++    /* else { sprintf(TmStr, "%02dh%02dm", int(GetSecs())/3600, (int(GetSecs())%3600)/60); } */  
++    return TmStr; }
+   static char* GetCurTm(){ static TStr TmStr; TmStr=TSecTm::GetCurTm().GetTmStr(); return TmStr.CStr(); }
+ };
+ 
+diff --git a/snap-adv/localmotifcluster.cpp b/snap-adv/localmotifcluster.cpp
+index 2c0e7f9..e04fc26 100644
+--- a/snap-adv/localmotifcluster.cpp
++++ b/snap-adv/localmotifcluster.cpp
+@@ -1,3 +1,6 @@
++#include <sstream>
++#include <vector>
++#include <algorithm>
+ #include "localmotifcluster.h"
+ #include "stdafx.h"
+ 
+@@ -764,6 +767,54 @@ void MAPPR::printAPPR() {
+   printf("L1-norm of APPR vector: %.7f\n", appr_norm);
+ }
+ 
++typedef struct {
++  TInt metis_id;
++  TInt edglt_id;
++} PAIR_METIS_EDGELIST;
++
++bool compare_edglt_id(const PAIR_METIS_EDGELIST& a, const PAIR_METIS_EDGELIST& b) {
++  return a.edglt_id < b.edglt_id;
++}
++
++// Use binary search to translate node IDs
++TInt get_metis_node_id (std::vector<PAIR_METIS_EDGELIST>& map, TInt l, TInt r, TInt edgelist_node_id) {
++  TInt mid_index = l + (r - l) / 2;
++  if (map[mid_index].edglt_id == edgelist_node_id) return map[mid_index].metis_id;
++  if (map[mid_index].edglt_id > edgelist_node_id) return get_metis_node_id(map, l, mid_index-1, edgelist_node_id);
++  return get_metis_node_id(map, mid_index+1, r, edgelist_node_id);
++}
++
++void MAPPR::writeCommunity(const TStr filename, const TStr map_filename) {
++  if (NodeInOrder.Len() == 0) {
++    TExcept::Throw("No APPR vector has been computed! Please first do MAPPR::computeAPPR(...)!");
++  }
++  char * line = NULL;
++  size_t len = 0;
++  TInt i=0;
++  ssize_t read;
++  std::vector<PAIR_METIS_EDGELIST> map;
++  bool needs_mapping = !(map_filename=="");
++  if (needs_mapping) {
++	  printf("Needs Mapping\n");
++    FILE *f_map = fopen(map_filename.CStr(), "r");
++    while ((read = getline(&line, &len, f_map)) != -1) {
++      map.push_back({i++,strtoll(line,NULL,10)});
++    }
++    fclose(f_map);
++    std::sort(map.begin(), map.end(), compare_edglt_id);
++  }
++  FILE *f = fopen(filename.CStr(), "w");
++  for (i = 0; i < NodeInOrder.Len(); i ++) {
++    TInt node = NodeInOrder[i];
++    if (needs_mapping) node = get_metis_node_id(map, 0, map.size()-1, node);
++    fprintf(f,"%d\n",node);
++    if (i == SizeGlobalMin - 1) {
++      break;                              
++    }
++  }
++  fclose(f);
++}                                                                                                  
++
+ void MAPPR::printProfile() {
+   if (NodeInOrder.Len() == 0) {
+     TExcept::Throw("No APPR vector has been computed! Please first do MAPPR::computeAPPR(...)!");
+@@ -780,4 +831,13 @@ void MAPPR::printProfile() {
+       printf("\tFirst local minimun!!!\n");
+     }
+   }
+-}
+\ No newline at end of file
++}
++
++void MAPPR::printConductance() {
++  if (NodeInOrder.Len() == 0) {
++    TExcept::Throw("No APPR vector has been computed! Please first do MAPPR::computeAPPR(...)!");
++  }
++  int i = SizeGlobalMin - 1;
++  float Cond = MtfCondProfile[i];
++  printf("Best Result - Depth: X Imbalance: X Motif Conductance: %f\n", Cond);
++}
+diff --git a/snap-adv/localmotifcluster.h b/snap-adv/localmotifcluster.h
+index 24a8004..b603fe4 100644
+--- a/snap-adv/localmotifcluster.h
++++ b/snap-adv/localmotifcluster.h
+@@ -1,6 +1,7 @@
+ #ifndef snap_localmotifcluster_h
+ #define snap_localmotifcluster_h
+ 
++#include <sstream>
+ #include "Snap.h"
+ 
+ typedef TVec< THash<TInt, TFlt> > WeightVH;
+@@ -182,9 +183,11 @@ class MAPPR {
+   TIntV getCluster() { return Cluster; };
+   void printAPPR();
+   void printProfile();
++  void writeCommunity(const TStr filename, const TStr map_filename);
++  void printConductance();
+ };
+ 
+ 
+ 
+ 
+-#endif  // snap_localmotifcluster_h
+\ No newline at end of file
++#endif  // snap_localmotifcluster_h
